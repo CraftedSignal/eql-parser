@@ -1,0 +1,1565 @@
+[
+  {
+    "source": "curated",
+    "name": "valid_000",
+    "query": "process where process.name == \"cmd.exe\"",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_001",
+    "query": "process where process.name : \"cmd.exe\"",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_002",
+    "query": "any where true",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_003",
+    "query": "process where event.type == \"start\" and process.name : \"regsvr32.exe\"",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_004",
+    "query": "process where process.name in (\"cmd.exe\", \"powershell.exe\", \"pwsh.exe\")",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_005",
+    "query": "process where process.name not in~ (\"explorer.exe\", \"svchost.exe\")",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_006",
+    "query": "file where file.path like (\"C:\\\\Windows\\\\*\", \"C:\\\\Users\\\\*\\\\AppData\\\\*\")",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_007",
+    "query": "process where process.command_line regex~ \"\"\".*-enc.*\"\"\"",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_008",
+    "query": "network where cidrMatch(source.ip, \"10.0.0.0/8\", \"192.168.0.0/16\")",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_009",
+    "query": "process where endsWith~(process.name, \".exe\") and length(process.args) \u003e= 3",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_010",
+    "query": "process where ?process.Ext.token.integrity_level_name : \"system\"",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_011",
+    "query": "process where process.args[0] : \"*python*\" and process.args[1] : \"*.py\"",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_012",
+    "query": "process where `unusual field name` == 1",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_013",
+    "query": "process where not (process.name : \"a.exe\" or process.name : \"b.exe\")",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_014",
+    "query": "process where process.parent.name : \"winword.exe\" and process.name : (\"cmd.exe\", \"powershell.exe\")",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_015",
+    "query": "sequence by process.entity_id [process where event.type == \"start\" and process.name : \"msxsl.exe\"] [network where event.type == \"connection\" and network.direction : \"egress\"]",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_016",
+    "query": "sequence by host.id with maxspan=5m [process where event.action == \"start\"] [network where event.action == \"connection_attempted\"]",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_017",
+    "query": "sequence by source.ip with maxspan=10s [authentication where event.outcome == \"failure\"] with runs=5 [authentication where event.outcome == \"success\"]",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_018",
+    "query": "sequence with maxspan=1m [process where process.name : \"sshd\"] ![process where event.type == \"end\"]",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_019",
+    "query": "sequence by process.entity_id [file where event.type == \"creation\"] [network where event.type == \"connection\"] until [process where event.type == \"end\"]",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_020",
+    "query": "join by user.name [authentication where event.outcome == \"success\"] [process where process.name : \"net.exe\"]",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_021",
+    "query": "sample by host.id [process where process.name : \"malware.exe\"] [file where file.name : \"ransom.txt\"]",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_022",
+    "query": "process where process.name : \"whoami.exe\" | head 10",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_023",
+    "query": "process where true | unique process.name, user.name | count",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_024",
+    "query": "process where p == 1 | filter q : \"x\" | sort r | tail 5",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_025",
+    "query": "process where process.name == 'net.exe'",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_026",
+    "query": "process where process.name = \"cmd.exe\"",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_027",
+    "query": "process where wildcard(process.command_line, \"*mimikatz*\")",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_028",
+    "query": "process where child of [process where process.name : \"explorer.exe\"]",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_029",
+    "query": "network where descendant of [process where process.name : \"powershell.exe\"]",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_030",
+    "query": "process where process.pid == 4 and process.ppid != 0 and process.args_count \u003e 1",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_031",
+    "query": "\"my-custom-category\" where field.a == 1",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_032",
+    "query": "process where process.hash.sha256 : \"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_033",
+    "query": "file where file.extension in (\"exe\", \"dll\", \"scr\", \"com\", \"bat\")",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_034",
+    "query": "process where startsWith(process.executable, \"C:\\\\Windows\\\\Temp\")",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_035",
+    "query": "network where destination.port in (445, 135, 139, 3389)",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_036",
+    "query": "process where process.name : \"rundll32.exe\" and process.args_count == 1",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_037",
+    "query": "process where match(process.command_line, \"(?i)invoke-expression\")",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_038",
+    "query": "registry where registry.path : \"HKLM\\\\SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run\\\\*\"",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_039",
+    "query": "process where stringContains~(process.command_line, \"downloadstring\")",
+    "valid": true
+  },
+  {
+    "source": "curated",
+    "name": "valid_040",
+    "query": "process where process.name : \"a.exe\" or process.name : \"b.exe\" or process.name : \"c.exe\"",
+    "valid": true
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_000",
+    "query": ""
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_001",
+    "query": "   "
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_002",
+    "query": "process where"
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_003",
+    "query": "where"
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_004",
+    "query": "sequence"
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_005",
+    "query": "sequence ["
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_006",
+    "query": "process where (((((((((("
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_007",
+    "query": "process where a == \"unterminated"
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_008",
+    "query": "process where a in ("
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_009",
+    "query": "process where a : ()"
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_010",
+    "query": "@#$%^\u0026*()"
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_011",
+    "query": "process where process.name == == \"cmd\""
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_012",
+    "query": "| head 10"
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_013",
+    "query": "process where a \u003c b \u003c c \u003c d"
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_014",
+    "query": "sequence with maxspan= [a where true]"
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_015",
+    "query": "process where not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not not a == 1"
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_016",
+    "query": "process where a and or not b"
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_017",
+    "query": "\"\"\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_018",
+    "query": "process where f(f(f(f(f(f("
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_019",
+    "query": "♠♣♥♦ where ☺ == ☹"
+  },
+  {
+    "source": "adversarial",
+    "name": "adv_020",
+    "query": "process where a == 1 and"
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0000",
+    "query": "sequence by process.entity_id with maxspan=1m\n[network where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"connection_attempted\" and user.id == \"0\" and\n    not process.executable : (\"/bin/ssh\", \"/sbin/ssh\", \"/usr/lib/systemd/systemd\", \"/usr/sbin/sshd\",\"/usr/bin/ssh\",\"/usr/bin/sshpass\")]\n[process where host.os.type == \"linux\" and event.action == \"session_id_change\" and user.id == \"0\" and\n    not process.executable : (\"/bin/ssh\", \"/sbin/ssh\", \"/usr/lib/systemd/systemd\", \"/usr/sbin/sshd\",\"/usr/bin/ssh\",\"/usr/bin/sshpass\")]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0006",
+    "query": "sequence by host.id, auditd.data.addr, related.user with maxspan=5s\n  [authentication where host.os.type == \"linux\" and event.action == \"authenticated\" and\n   auditd.data.terminal == \"ftp\" and event.outcome == \"failure\" and auditd.data.addr != null and\n   auditd.data.addr != \"0.0.0.0\" and auditd.data.addr != \"::\"] with runs=10\n  [authentication where host.os.type == \"linux\" and event.action  == \"authenticated\" and\n   auditd.data.terminal == \"ftp\" and event.outcome == \"success\" and auditd.data.addr != null and\n   auditd.data.addr != \"0.0.0.0\" and auditd.data.addr != \"::\"] | tail 1",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0012",
+    "query": "sequence by host.id with maxspan=5s\n   [process where host.os.type == \"windows\" and event.type == \"end\" and\n    process.code_signature.trusted != true and\n    not process.executable like\n             (\"C:\\\\Windows\\\\SoftwareDistribution\\\\*.exe\",\n              \"C:\\\\Windows\\\\WinSxS\\\\*.exe\",\n              \"?:\\\\Windows\\\\Postillion\\\\Office\\\\*.exe\") and\n    not (\n      process.name : \"infinst.exe\" and process.parent.name: \"dxsetup.exe\" and\n      process.parent.code_signature.subject_name == \"NVIDIA Corporation\" and\n      process.parent.code_signature.status == \"trusted\"\n    )\n   ] by process.executable\n   [file where host.os.type == \"windows\" and event.type == \"deletion\" and file.extension in~ (\"exe\", \"scr\", \"com\") and\n    not process.executable like\n             (\"?:\\\\Program Files\\\\*.exe\",\n              \"?:\\\\Program Files (x86)\\\\*.exe\",\n              \"?:\\\\Windows\\\\System32\\\\svchost.exe\",\n              \"?:\\\\Windows\\\\System32\\\\drvinst.exe\",\n              \"?:\\\\Windows\\\\Postillion\\\\Office\\\\*.exe\") and\n    not file.path like (\n          \"?:\\\\Program Files\\\\*.exe\",\n          \"?:\\\\Program Files (x86)\\\\*.exe\",\n          \"?:\\\\Windows\\\\Temp\\\\*\\\\DismHost.exe\",\n          \"?:\\\\$WINDOWS.~BT\\\\Work\\\\*\\\\DismHost.exe\",\n          \"?:\\\\$WinREAgent\\\\Scratch\\\\*\\\\DismHost.exe\",\n          \"?:\\\\Windows\\\\tenable_mw_scan_*.exe\",\n          \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Temp\\\\LogiUI\\\\Pak\\\\uninstall.exe\",\n          \"?:\\\\ProgramData\\\\chocolatey\\\\*.exe\"\n    ) and\n    not (process.name : \"OktaVerifySetup-*.exe\" and process.code_signature.subject_name == \"Okta, Inc.\") and\n    not (\n      process.executable : \"?:\\\\Windows\\\\SysWOW64\\\\config\\\\systemprofile\\\\Citrix\\\\UpdaterBinaries\\\\CitrixReceiver\\\\*\" and\n      process.code_signature.subject_name == \"Citrix Systems, Inc.\" and\n      file.path : \"?:\\\\Windows\\\\SysWOW64\\\\config\\\\systemprofile\\\\Citrix\\\\UpdaterBinaries\\\\CitrixReceiver\\\\*\\\\bootstrapperhelper.exe\"\n    )\n   ] by file.path",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0018",
+    "query": "process where event.type == \"start\" and process.name == \"sensible-pager\" and\n  process.args in (\"/bin/sh\", \"/bin/bash\", \"/bin/dash\", \"sh\", \"bash\", \"dash\") and\n  process.parent.name in (\"apt\", \"apt-get\") and process.parent.args == \"changelog\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0024",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and process.name == \"curl\"\nand (\n  process.args like (\"--socks5-hostname\", \"--proxy\", \"--preproxy\", \"socks5*\") or\n  process.env_vars like (\"http_proxy=socks5h://*\", \"HTTPS_PROXY=socks5h://*\", \"ALL_PROXY=socks5h://*\")\n) and length(process.command_line) \u003e 255 and not (\n  process.parent.name in (\"cf-agent\", \"agent-run\", \"agent-check\", \"rudder\", \"agent-inventory\", \"cf-execd\") or\n  process.args like \"/opt/rudder/*\" or\n  process.parent.executable like (\"/vz/root/*\", \"/var/rudder/*\")\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0030",
+    "query": "process where event.type == \"start\" and process.name in (\"bash\", \"sh\", \"dash\") and\n  process.parent.name == \"mysql\" and process.parent.args == \"-e\" and\n  process.parent.args : (\"\\\\!*sh\", \"\\\\!*bash\", \"\\\\!*dash\", \"\\\\!*/bin/sh\", \"\\\\!*/bin/bash\", \"\\\\!*/bin/dash\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0036",
+    "query": "process where event.type == \"start\" and process.parent.name in (\"vi\", \"vim\") and process.parent.args == \"-c\" and process.parent.args in (\":!/bin/bash\", \":!/bin/sh\", \":!bash\", \":!sh\") and process.name in (\"bash\", \"sh\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0042",
+    "query": "process where container.id: \"*\" and event.type== \"start\" and\nevent.action in (\"fork\", \"exec\") and\nprocess.name: (\"sshd\", \"ssh\", \"autossh\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0048",
+    "query": "authentication where\n\n /* event 4624 need to be logged */\n event.action == \"logged-in\" and event.outcome == \"success\" and\n\n /* authenticate locally via relayed kerberos ticket */\n winlog.event_data.AuthenticationPackageName : \"Kerberos\" and winlog.logon.type == \"Network\" and\n source.ip == \"127.0.0.1\" and source.port \u003e 0 and\n\n /* Impersonate Administrator user via S4U2Self service ticket */\n winlog.event_data.TargetUserSid : \"S-1-5-21-*-500\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0054",
+    "query": "process where event.type == \"start\" and\nevent.action in (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\", \"executed\", \"process_started\") and\nprocess.parent.name in (\"node\", \"bun\", \"node.exe\", \"bun.exe\") and (\n(\n  process.name in (\"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\", \"cmd.exe\", \"bash.exe\", \"powershell.exe\") and\n  process.command_line like~ (\"*curl*http*\", \"*wget*http*\")\n) or \n(\n  process.name in (\"curl\", \"wget\", \"curl.exe\", \"wget.exe\")\n)\n) and not (\n  process.command_line like (\"*127.0.0.1*\", \"*localhost*\", \"*/home/*/.claude/shell-snapshots/*\", \"*/root/.claude/shell-snapshots/snapshot*\", \"*/Users/*/.claude/shell-snapshots/*\") or\n  process.parent.executable like (\"/*/.cursor-server/*node\", \"/home/*/cursor-agent/*/node\") \n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0060",
+    "query": "sequence by source.port, source.ip, destination.ip with maxspan=5s\n [network where data_stream.dataset == \"suricata.eve\" and event.kind == \"alert\" and\n  event.severity != 3 and source.ip != null and destination.ip != null and\n  not source.domain : (\"*nessusscan*\", \"SCCMPS*\") and\n  not rule.name in (\"ET INFO SMB2 NT Create AndX Request For a Powershell .ps1 File\", \"ET SCAN MS Terminal Server Traffic on Non-standard Port\")]\n [network where event.module == \"endpoint\" and event.action in (\"disconnect_received\", \"connection_attempted\") and\n  not process.executable in (\"System\", \"C:\\\\Program Files (x86)\\\\Admin Arsenal\\\\PDQ Inventory\\\\PDQInventoryService.exe\") and \n  not process.executable : \"C:\\\\Windows\\\\AdminArsenal\\\\PDQInventory-Scanner\\\\service-*\\\\exec\\\\PDQInventoryScanner.exe\"]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0066",
+    "query": "process where host.os.type in (\"linux\", \"macos\", \"windows\") and event.type == \"start\" and\nevent.action like (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\", \"executed\", \"process_started\", \"Process Create*\") and\n(\n  process.name in~ (\n    \"curl\", \"curl.exe\", \"wget\", \"wget.exe\", \"bash\", \"dash\", \"sh\", \"tcsh\", \"tclsh\", \"wish\",\n    \"csh\", \"zsh\", \"ksh\", \"fish\", \"mksh\", \"busybox\", \"powershell.exe\", \"cmd.exe\", \"pwsh.exe\", \"pwsh\"\n  ) or\n  process.name like~ (\".*\", \"python*\", \"perl*\", \"ruby*\", \"php*\", \"lua*\", \"java*\") or\n  ?process.executable like~ (\n    \"/tmp/*\", \"/var/tmp/*\", \"/dev/shm/*\", \"/home/*/*\", \"/var/run/*\", \"/run/*\", \"/boot/*\", \"/.*\", \"C:\\\\Users\\\\*\",\n    \"?:\\\\ProgramData\\\\*\", \"/var/www/*\", \"./*\"\n  )\n) and\nprocess.args like~ (\n  \"*/latest/meta-data/iam/security-credentials/?*\",\n  \"*computeMetadata/v1/instance/service-accounts/*/oauth2/access_token*\",\n  \"*/metadata/identity/oauth2/token*resource=*\"\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0072",
+    "query": "process where event.type == \"start\" and\n(\n  /* net, sc or wmic stopping or deleting Elastic Agent on Windows */\n  (\n    process.name : (\"net.exe\", \"sc.exe\", \"wmic.exe\",\"powershell.exe\",\"taskkill.exe\",\"PsKill.exe\",\"ProcessHacker.exe\") and\n    process.args : (\"stopservice\",\"uninstall\", \"stop\", \"disabled\",\"Stop-Process\",\"terminate\",\"suspend\") and\n    process.args : (\"elasticendpoint\", \"Elastic Agent\",\"elastic-agent\",\"elastic-endpoint\")\n  ) or\n\n  /* service or systemctl used to stop Elastic Agent on Linux */\n  (\n    process.name in (\"systemctl\", \"service\", \"chkconfig\", \"update-rc.d\") and\n    process.args : (\"elastic-agent\", \"elastic-agent.service\", \"ElasticEndpoint\") and\n    process.args : (\"stop\", \"disable\", \"remove\", \"off\", \"kill\", \"mask\") and\n    not (\n      process.parent.executable : \"/opt/Elastic/Agent/data/elastic-agent-*/components/previous/elastic-endpoint\" and\n      process.parent.args : \"uninstall\" and\n      process.parent.args : \"--keepstate\"\n    )\n  ) or\n  \n  /* pkill, killall used to stop Elastic Agent or Endpoint on Linux */\n  (process.name in (\"pkill\", \"killall\", \"kill\") and process.args : (\"elastic-agent\", \"elastic-endpoint\")) or\n\n  /* Unload Elastic Defend extension on MacOS */\n  (process.name : \"kextunload\" and process.args : \"com.apple.iokit.EndpointSecurity\")\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0078",
+    "query": "sequence by host.id with maxspan=5m\n [any where data_stream.dataset == \"endpoint.alerts\"]\n ![any where event.category in (\"process\", \"library\", \"registry\", \"network\", \"dns\", \"file\")]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0084",
+    "query": "process where host.os.type in (\"linux\", \"macos\") and event.type == \"start\" and\nevent.action in (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\", \"executed\", \"process_started\") and\nprocess.name == \"kubectl\" and process.args in (\"get\", \"describe\") and process.args in (\"secret\", \"secrets\") and\nprocess.args in (\"--all-namespaces\", \"-A\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0090",
+    "query": "sequence with maxspan=1s\n  [process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and process.interactive == true and\n  container.id like \"*\" and\n  /* Covered by the rule \"Direct Interactive Kubernetes API Request by Common Utilities\" */\n  not (\n     process.name in (\"wget\", \"curl\", \"openssl\", \"socat\", \"ncat\", \"kubectl\") or\n     (\n       /* Account for tools that execute utilities as a subprocess, in this case the target utility name will appear as a process arg */\n       process.name in (\"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\", \"busybox\") and\n       process.args in (\n         \"wget\", \"/bin/wget\", \"/usr/bin/wget\", \"/usr/local/bin/wget\",\n         \"ssl_client\", \"/bin/ssl_client\", \"/usr/bin/ssl_client\", \"/usr/local/bin/ssl_client\",\n         \"curl\", \"/bin/curl\", \"/usr/bin/curl\", \"/usr/local/bin/curl\",\n         \"openssl\", \"/bin/openssl\", \"/usr/bin/openssl\", \"/usr/local/bin/openssl\",\n         \"socat\", \"/bin/socat\", \"/usr/bin/socat\", \"/usr/local/bin/socat\",\n         \"ncat\", \"/bin/ncat\", \"/usr/bin/ncat\", \"/usr/local/bin/ncat\",\n         \"kubectl\", \"/bin/kubectl\", \"/usr/bin/kubectl\", \"/usr/local/bin/kubectl\"\n       ) and\n       /* default exclusion list to not FP on default multi-process commands */\n       not process.args in (\n         \"which\", \"/bin/which\", \"/usr/bin/which\", \"/usr/local/bin/which\",\n         \"man\", \"/bin/man\", \"/usr/bin/man\", \"/usr/local/bin/man\",\n         \"chmod\", \"/bin/chmod\", \"/usr/bin/chmod\", \"/usr/local/bin/chmod\",\n         \"chown\", \"/bin/chown\", \"/usr/bin/chown\", \"/usr/local/bin/chown\"\n       )\n     ) or\n     /* General exclusions for utilities that are not typically used for Kubernetes API requests */\n     process.name in (\n       \"sleep\", \"head\", \"tail\", \"apk\", \"apt\", \"apt-get\", \"dnf\", \"microdnf\", \"yum\", \"zypper\", \"tdnf\",\n       \"pacman\", \"rpm\", \"dpkg\"\n     )\n   )] by orchestrator.resource.name\n  [any where\n     data_stream.dataset == \"kubernetes.audit_logs\" and\n     kubernetes.audit.stage in (\"ResponseStarted\",\"ResponseComplete\") and\n     kubernetes.audit.verb in (\"get\", \"list\", \"watch\", \"create\", \"patch\", \"update\") and\n     (\n       kubernetes.audit.objectRef.resource in (\n         \"pods\", \"secrets\", \"serviceaccounts\", \"configmaps\",\n         \"roles\", \"rolebindings\", \"clusterroles\", \"clusterrolebindings\",\n         \"deployments\", \"daemonsets\", \"statefulsets\", \"jobs\", \"cronjobs\",\n         \"nodes\", \"namespaces\",\n         \"selfsubjectaccessreviews\", \"selfsubjectrulesreviews\", \"subjectaccessreviews\"\n       )\n       or (\n         kubernetes.audit.objectRef.resource == \"pods\" and\n         kubernetes.audit.objectRef.subresource in (\"exec\", \"attach\", \"portforward\", \"log\")\n       )\n     )\n  ] by `kubernetes.audit.user.extra.authentication.kubernetes.io/pod-name`",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0096",
+    "query": "process where event.type == \"start\" and event.action in (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\", \"executed\", \"process_started\") and\nprocess.name == \"docker\" and process.args == \"--privileged\" and process.args == \"run\" and\nprocess.args == \"-v\" and process.args like \"/:/*\" and\nnot (\n  (process.args == \"aktosecurity/mirror-api-logging:k8s_ebpf\" and process.args == \"akto-api-security-traffic-collector\") or\n  (process.args like \"goharbor/prepare:*\" and process.args in (\"/:/hostfs\", \"/:/hostfs/\"))\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0102",
+    "query": "process where event.type == \"start\" and event.action in (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\", \"executed\", \"process_started\") and\n (\n   /* Direct child of the GitHub Actions Runner.Worker process */\n   process.parent.name in (\"Runner.Worker\", \"Runner.Worker.exe\") or\n\n   /* Child of a shell interpreter launched via a runner entrypoint script\n      (e.g. /home/runner/runners/\u003cver\u003e/run/entrypoint.sh or similar paths) */\n   (\n     process.parent.name in (\"sh\", \"bash\", \"zsh\") and\n     process.parent.command_line like \"*runner*entrypoint.sh\"\n   )\n ) and\n (\n   process.name : (\n     /* Network / download utilities */\n     \"curl\", \"curl.exe\", \"wget\", \"wget.exe\",\n     /* Windows scripting \u0026 LOLBins */\n     \"powershell.exe\", \"cmd.exe\", \"pwsh.exe\", \"certutil.exe\", \"rundll32.exe\",\n     /* Unix shells */\n     \"bash\", \"sh\", \"zsh\", \"dash\", \"ash\", \"tcsh\", \"csh\", \"ksh\", \"fish\", \"mksh\", \"busybox\", \"pwsh\",\n     /* File / archive manipulation */\n     \"tar\", \"gzip\", \"rm\", \"sed\", \"chmod\",\n     /* macOS-specific */\n     \"osascript\",\n     /* Process persistence helpers */\n     \"nohup\", \"setsid\",\n     /* Scripting runtimes */\n     \"python*\", \"perl*\", \"ruby*\", \"lua*\", \"php*\", \"node\", \"nodejs\", \"node.exe\",\n     /* Discovery \u0026 reconnaissance */\n     \"pgrep\", \"grep\", \"find\", \"printenv\", \"env\", \"nmap\",\n     /* Crypto / encoding (potential exfiltration or C2 channel) */\n     \"openssl\", \"base64\", \"basez\", \"base64plain\", \"base64url\", \"base64mime\", \"base64pem\", \"basenc\", \"base32\", \"base16\", \"xxd\",\n     /* Data manipulation / inspection */\n     \"tr\", \"cat\",\n     /* Network relay / tunneling */\n     \"nc\", \"ncat\", \"netcat\", \"nc.traditional\", \"nc.openbsd\", \"socat\", \"wg\", \"wg-quick\",\n     /* Remote access */\n     \"ssh\", \"ssh.exe\", \"ftp\", \"tftp\", \"scp\", \"sftp\",\n     /* Kubernetes / infrastructure */\n     \"kubectl\", \"helm\", \"docker\", \"ctr\", \"crictl\",\n     /* Secret management */\n     \"vault\",\n     /* GitHub CLI */\n     \"gh\",\n     /* AWS CLI */\n     \"aws\",\n     /*Azure CLI */\n     \"az\",\n     /*GCP CLI */\n     \"gcloud\",\n     /* Google Workspace CLI */\n     \"gws\"\n   ) or\n   process.executable : (\"/tmp/*\", \"/private/tmp/*\", \"/var/tmp/*\", \"/dev/shm/*\", \"/run/*\", \"/var/run/*\", \"?:\\\\Users\\\\*\")\n )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0108",
+    "query": "sequence by user.name with maxspan=10m\n [authentication where data_stream.dataset == \"fortinet_fortigate.log\" and event.action == \"login\" and event.code in (\"0101039426\", \"0101039427\") and\n  user.name != \"root\"]\n [any where event.kind == \"signal\" and kibana.alert.rule.name != null and data_stream.dataset != \"fortinet_fortigate.log\" and\n  kibana.alert.risk_score \u003e 21 and kibana.alert.rule.rule_id != \"a7f2c1b4-5d8e-4f3a-9b0c-2e1d4a6b8f3e\" and user.name != null]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0114",
+    "query": "iam where data_stream.dataset == \"aws.cloudtrail\"\n   and event.action == \"AttachUserPolicy\"\n   and event.outcome == \"success\"\n   and stringContains(aws.cloudtrail.request_parameters, \"AWSCompromisedKeyQuarantine\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0120",
+    "query": "info where data_stream.dataset == \"aws.cloudtrail\"\n    and event.provider == \"s3.amazonaws.com\"\n    and event.action == \"PutBucketPolicy\" \n    and event.outcome == \"success\"\n    and stringContains(aws.cloudtrail.request_parameters, \"Effect=Allow\")\n    and (\n        stringContains(aws.cloudtrail.request_parameters, \"AWS=\") or \n        stringContains(aws.cloudtrail.request_parameters, \"aws:PrincipalAccount=\") or\n        stringContains(aws.cloudtrail.request_parameters, \"aws:SourceAccount=\")\n        )\nand not stringContains(aws.cloudtrail.request_parameters, \"arn:aws:cloudfront::\")  \nand not stringContains(aws.cloudtrail.request_parameters, \"arn:aws:iam::cloudfront:user\")\nand not stringContains(aws.cloudtrail.request_parameters, aws.cloudtrail.recipient_account_id)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0126",
+    "query": "file where\n  data_stream.dataset == \"aws.cloudtrail\" and\n  event.provider == \"s3.amazonaws.com\" and\n  event.action == \"PutObject\" and\n  event.outcome == \"success\" and\n  /* Apply regex to match patterns only after the bucket name */\n  /* common ransom note file name keywords */\n  aws.cloudtrail.resources.arn regex~ \"arn:aws:s3:::[^/]+/.*?(how|decrypt|restor|help|instruct|read|get|recov|save|encrypt|info|ransom).*\"\n  and not aws.cloudtrail.resources.arn regex~ \".*(AWSLogs|CloudTrail|access-logs).*\"\n  and not aws.cloudtrail.user_identity.type == \"AWSService\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0132",
+    "query": "info where data_stream.dataset == \"aws.cloudtrail\"\n  and event.provider == \"rolesanywhere.amazonaws.com\"\n  and event.action == \"CreateTrustAnchor\"\n  and event.outcome == \"success\"\n  and not stringContains(aws.cloudtrail.request_parameters, \"sourceType=AWS_ACM_PCA\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0138",
+    "query": "iam where data_stream.dataset == \"aws.cloudtrail\"\n   and event.provider == \"iam.amazonaws.com\"\n   and event.action == \"AttachGroupPolicy\"\n   and event.outcome == \"success\"\n   and stringContains(aws.cloudtrail.request_parameters, \"policyArn=arn:aws:iam::aws:policy/AdministratorAccess\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0144",
+    "query": "sequence by azure.identityprotection.properties.user_principal_name with maxspan=10m\n[any where event.module == \"azure\" and data_stream.dataset == \"azure.identity_protection\"] with runs=2",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0150",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and process.interactive == true and (\n  (\n    (process.name == \"curl\" or process.args in (\"curl\", \"/bin/curl\", \"/usr/bin/curl\", \"/usr/local/bin/curl\")) and\n    process.args in (\"-o\", \"-O\", \"--output\", \"--remote-name\", \"--remote-name-all\", \"--output-dir\")\n  ) or\n  (\n    (process.name == \"wget\" or process.args in (\"wget\", \"/bin/wget\", \"/usr/bin/wget\", \"/usr/local/bin/wget\")) and\n    process.args like (\"-*O*\", \"--output-document=*\", \"--output-file=*\")\n  )\n) \nand container.id like \"?*\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0156",
+    "query": "sequence by process.parent.entity_id, container.id with maxspan=3s\n  [process where event.type == \"start\" and event.action == \"exec\" and container.id like \"?*\" and (\n    (\n      (\n        process.name in (\"base64\", \"basez\", \"base64plain\", \"base64url\", \"base64mime\", \"base64pem\", \"basenc\", \"base32\", \"base16\") or\n        (\n          process.name in (\"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\", \"busybox\") and\n          process.args in (\"base64\", \"basez\", \"base64plain\", \"base64url\", \"base64mime\", \"base64pem\", \"basenc\", \"base32\", \"base16\")\n        )\n      ) and\n      process.args like~ \"*-*d*\"\n    ) or\n    (\n      process.name == \"openssl\" and\n      process.args == \"enc\" and process.args in (\"-d\", \"-base64\", \"-a\", \"-A\")\n    ) or\n    (\n      process.name like \"python*\" and (\n        (process.args == \"base64\" and process.args in (\"-d\", \"-u\", \"-t\")) or\n        (process.args == \"-c\" and process.args like \"*base64*\" and process.args like~ \"*b64decode*\")\n      )\n    ) or\n    (\n      process.name like \"perl*\" and\n      process.args like~ \"*decode_base64*\"\n    ) or\n    (\n      process.name like \"ruby*\" and\n      process.args == \"-e\" and\n      process.args like~ \"*Base64.decode64*\"\n    )\n  )]\n  [process where event.type == \"start\" and event.action == \"exec\" and process.name like (\n    \"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\", \"busybox\",\n    \"python*\", \"perl*\", \"ruby*\", \"lua*\", \"php*\"\n  ) and\n  process.args like (\n    \"-bash\", \"-dash\", \"-sh\", \"-tcsh\", \"-csh\", \"-zsh\", \"-ksh\", \"-fish\", \"-busybox\",\n    \"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\", \"busybox\",\n    \"/bin/bash\", \"/bin/dash\", \"/bin/sh\", \"/bin/tcsh\", \"/bin/csh\",\n    \"/bin/zsh\", \"/bin/ksh\", \"/bin/fish\", \"/bin/busybox\",\n    \"/usr/bin/bash\", \"/usr/bin/dash\", \"/usr/bin/sh\", \"/usr/bin/tcsh\",\n    \"/usr/bin/csh\", \"/usr/bin/zsh\", \"/usr/bin/ksh\", \"/usr/bin/fish\",\n    \"/usr/bin/busybox\",\n    \"*python*\", \"*perl*\", \"*ruby*\", \"*lua*\", \"*php*\", \"/dev/fd/*\"\n  ) and\n  not (\n    process.working_directory like (\n      \"/usr/local/zeek\", \"/opt/zeek\", \"/var/lib/docker/overlay2/*/opt/zeek\", \"/usr/local/zeek_old_install\",\n      \"/var/lib/docker/overlay2/*/usr/local/zeek\", \"/proc/self/fd/*/usr/local/zeek\"\n    ) or\n    process.args in (\n      \"which\", \"/bin/which\", \"/usr/bin/which\", \"/usr/local/bin/which\",\n      \"man\", \"/bin/man\", \"/usr/bin/man\", \"/usr/local/bin/man\",\n      \"chmod\", \"/bin/chmod\", \"/usr/bin/chmod\", \"/usr/local/bin/chmod\",\n      \"chown\", \"/bin/chown\", \"/usr/bin/chown\", \"/usr/local/bin/chown\"\n    )\n  )]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0162",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and\nprocess.interactive == true and container.id like \"*\" and \n(\n  /* getent hosts is often used without a target arg */\n  (process.name == \"getent\" and process.args == \"hosts\") or\n\n  /* explicit DNS query tools */\n  (\n    process.name in (\"nslookup\", \"dig\", \"host\") or\n    (\n      /* Account for tools that execute utilities as a subprocess, in this case the target utility name will appear as a process arg */\n      process.name in (\"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\", \"busybox\") and\n      process.args in (\n        \"nslookup\", \"/bin/nslookup\", \"/usr/bin/nslookup\", \"/usr/local/bin/nslookup\",\n        \"dig\", \"/bin/dig\", \"/usr/bin/dig\", \"/usr/local/bin/dig\",\n        \"host\", \"/bin/host\", \"/usr/bin/host\", \"/usr/local/bin/host\"\n      ) and\n      /* default exclusion list to not FP on default multi-process commands */\n      not process.args in (\n        \"which\", \"/bin/which\", \"/usr/bin/which\", \"/usr/local/bin/which\",\n        \"man\", \"/bin/man\", \"/usr/bin/man\", \"/usr/local/bin/man\",\n        \"chmod\", \"/bin/chmod\", \"/usr/bin/chmod\", \"/usr/local/bin/chmod\",\n        \"chown\", \"/bin/chown\", \"/usr/bin/chown\", \"/usr/local/bin/chown\"\n      )\n    )\n  ) and\n  process.args like~ (\n    \"kubernetes.default\",\n    \"kubernetes\",\n    \"*.svc\",\n    \"*.svc.cluster.local\",\n    \"*.cluster.local\"\n  )\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0168",
+    "query": "any where host.os.type == \"linux\" and process.interactive == true and container.id like \"*\" and (\n  (event.category == \"file\" and event.type == \"change\" and event.action == \"open\" and\n  file.path in (\n    \"/var/run/secrets/kubernetes.io/serviceaccount/namespace\",\n    \"/run/secrets/kubernetes.io/serviceaccount/namespace\"\n  )) or\n  (event.category == \"process\" and event.type == \"start\" and event.action == \"exec\" and\n  (\n    process.name in (\"cat\", \"head\", \"tail\", \"more\", \"less\", \"sed\", \"awk\") or\n    process.args in (\n      \"cat\", \"/bin/cat\", \"/usr/bin/cat\", \"/usr/local/bin/cat\",\n      \"head\", \"/bin/head\", \"/usr/bin/head\", \"/usr/local/bin/head\",\n      \"tail\", \"/bin/tail\", \"/usr/bin/tail\", \"/usr/local/bin/tail\",\n      \"more\", \"/bin/more\", \"/usr/bin/more\", \"/usr/local/bin/more\",\n      \"less\", \"/bin/less\", \"/usr/bin/less\", \"/usr/local/bin/less\",\n      \"sed\", \"/bin/sed\", \"/usr/bin/sed\", \"/usr/local/bin/sed\",\n      \"awk\", \"/bin/awk\", \"/usr/bin/awk\", \"/usr/local/bin/awk\"\n    )\n  ) and process.args like \"*/run/secrets/kubernetes.io/serviceaccount/namespace*\"\n    )\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0174",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and\nprocess.name in (\"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\", \"busybox\") and\nprocess.entry_leader.entry_meta.type == \"container\" and\n\n/* process is the inital process run in a container */\nprocess.entry_leader.same_as_process == true and\n\n/* interactive process */\nprocess.interactive == true and container.id like \"*\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0180",
+    "query": "sequence by process.parent.entity_id, container.id with maxspan=1s\n  [process where event.type == \"start\" and event.action == \"exec\" and process.name in (\"curl\", \"wget\")]\n  [process where event.action in (\"exec\", \"end\") and\n  /*\n    If the flow is executed from a parent script, the event action will be \"exec\".\n    If the flow is executed manually, the event action will be \"end\".\n  */\n   process.name like (\n     \"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\", \"busybox\",\n     \"python*\", \"perl*\", \"ruby*\", \"lua*\", \"php*\"\n   ) and\n   process.args like (\n     \"-bash\", \"-dash\", \"-sh\", \"-tcsh\", \"-csh\", \"-zsh\", \"-ksh\", \"-fish\",\n     \"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\",\n     \"/bin/bash\", \"/bin/dash\", \"/bin/sh\", \"/bin/tcsh\", \"/bin/csh\",\n     \"/bin/zsh\", \"/bin/ksh\", \"/bin/fish\",\n     \"/usr/bin/bash\", \"/usr/bin/dash\", \"/usr/bin/sh\", \"/usr/bin/tcsh\",\n     \"/usr/bin/csh\", \"/usr/bin/zsh\", \"/usr/bin/ksh\", \"/usr/bin/fish\",\n     \"-busybox\", \"busybox\", \"/bin/busybox\", \"/usr/bin/busybox\",\n     \"*python*\", \"*perl*\", \"*ruby*\", \"*lua*\", \"*php*\", \"/dev/fd/*\"\n   ) and\n   not process.args in (\n     \"which\", \"/bin/which\", \"/usr/bin/which\", \"/usr/local/bin/which\",\n     \"man\", \"/bin/man\", \"/usr/bin/man\", \"/usr/local/bin/man\",\n     \"chmod\", \"/bin/chmod\", \"/usr/bin/chmod\", \"/usr/local/bin/chmod\",\n     \"chown\", \"/bin/chown\", \"/usr/bin/chown\", \"/usr/local/bin/chown\"\n   )]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0186",
+    "query": "file where event.type != \"deletion\" and\n/* open events currently only log file opens with write intent */\nevent.action in (\"creation\", \"rename\", \"open\") and (\n  file.path like (\n\n\t  // Cron \u0026 Anacron Jobs\n\t  \"/etc/cron.allow\", \"/etc/cron.deny\", \"/etc/cron.d/*\", \"/etc/cron.hourly/*\", \"/etc/cron.daily/*\",\n\t  \"/etc/cron.weekly/*\", \"/etc/cron.monthly/*\", \"/etc/crontab\", \"/var/spool/cron/crontabs/*\",\n\t  \"/var/spool/anacron/*\",\n\n\t  // At Job\n\t  \"/var/spool/cron/atjobs/*\", \"/var/spool/atjobs/*\",\n\n\t  // Sudoers\n\t  \"/etc/sudoers*\"\n  ) or\n  (\n  \t// Systemd Service/Timer\n    file.path like (\n\t  \"/etc/systemd/system/*\", \"/etc/systemd/user/*\", \"/usr/local/lib/systemd/system/*\",\n  \t  \"/lib/systemd/system/*\", \"/usr/lib/systemd/system/*\", \"/usr/lib/systemd/user/*\",\n      \"/home/*/.config/systemd/user/*\", \"/home/*/.local/share/systemd/user/*\",\n      \"/root/.config/systemd/user/*\", \"/root/.local/share/systemd/user/*\"\n    ) and\n    file.extension in (\"service\", \"timer\")\n  ) or\n  (\n\t// Shell Profile Configuration\n\tfile.path like (\"/etc/profile.d/*\", \"/etc/zsh/*\") or (\n\t  file.path like (\"/home/*/*\", \"/etc/*\", \"/root/*\") and\n\t  file.name in (\n  \t    \"profile\", \"bash.bashrc\", \"bash.bash_logout\", \"csh.cshrc\", \"csh.login\", \"config.fish\", \"ksh.kshrc\",\n  \t    \".bashrc\", \".bash_login\", \".bash_logout\", \".bash_profile\", \".bash_aliases\", \".zprofile\", \".zshrc\",\n  \t    \".cshrc\", \".login\", \".logout\", \".kshrc\"\n      )\n    )\n  )\n) and container.id like \"?*\" and\nnot process.name in (\"apt\", \"apt-get\", \"dnf\", \"microdnf\", \"yum\", \"zypper\", \"tdnf\", \"apk\", \"pacman\", \"rpm\", \"dpkg\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0192",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and (\n  process.name == \"mount\" or\n  (\n    /* account for tools that execute utilities as a subprocess, in this case the target utility name will appear as a process arg */\n    process.name in (\"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\", \"busybox\") and\n    process.args in (\n      \"mount\", \"/bin/mount\", \"/usr/bin/mount\", \"/usr/local/bin/mount\"\n    ) and\n    /* default exclusion list to not FP on default multi-process commands */\n    not process.args in (\n      \"which\", \"/bin/which\", \"/usr/bin/which\", \"/usr/local/bin/which\",\n      \"man\", \"/bin/man\", \"/usr/bin/man\", \"/usr/local/bin/man\",\n      \"chmod\", \"/bin/chmod\", \"/usr/bin/chmod\", \"/usr/local/bin/chmod\",\n      \"chown\", \"/bin/chown\", \"/usr/bin/chown\", \"/usr/local/bin/chown\"\n    )\n  )\n) and container.security_context.privileged == true and process.interactive == true and container.id like \"*\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0198",
+    "query": "configuration where data_stream.dataset == \"github.audit\"\n  and github.category == \"protected_branch\" and event.type == \"change\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0204",
+    "query": "iam where data_stream.dataset == \"github.audit\" and event.action == \"org.add_member\" and github.permission == \"admin\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0210",
+    "query": "sequence by user.name with maxspan=30s\n  [iam where data_stream.dataset == \"google_workspace.token\" and event.action == \"authorize\" and\n      google_workspace.token.client.id == \"77185425430.apps.googleusercontent.com\" and\n      source.as.number in (9009, 45102, 215540, 29802, 62240, 204957, 395092)]\n  [any where data_stream.dataset == \"google_workspace.device\" and google_workspace.device.account_state == \"REGISTERED\"]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0216",
+    "query": "web where\n    event.provider == \"Exchange\" and\n    event.action in (\n        \"New-InboxRule\",\n        \"Set-InboxRule\",\n        \"Set-Mailbox\",\n        \"Set-TransportRule\",\n        \"New-TransportRule\"\n    ) and event.outcome == \"success\" and\n    (\n        (?o365.audit.Parameters.ForwardTo != null and not endsWith~(?o365.audit.Parameters.ForwardTo, user.domain)) or\n        (?o365.audit.Parameters.ForwardAsAttachmentTo != null and not endsWith~(?o365.audit.Parameters.ForwardAsAttachmentTo, user.domain)) or\n        (?o365.audit.Parameters.ForwardingAddress != null and not endsWith~(?o365.audit.Parameters.ForwardingAddress, user.domain)) or\n        (?o365.audit.Parameters.ForwardingSmtpAddress != null and not endsWith~(?o365.audit.Parameters.ForwardingSmtpAddress, user.domain)) or\n        (?o365.audit.Parameters.RedirectTo != null and not endsWith~(?o365.audit.Parameters.RedirectTo, user.domain)) or\n        (?o365.audit.Parameters.RedirectToRecipients != null and not endsWith~(?o365.audit.Parameters.RedirectToRecipients, user.domain)) or\n        (?o365.audit.Parameters.RedirectMessageTo != null and not endsWith~(?o365.audit.Parameters.RedirectMessageTo, user.domain)) or\n        (?o365.audit.Parameters.BlindCopyTo != null and not endsWith~(?o365.audit.Parameters.BlindCopyTo, user.domain))\n    )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0222",
+    "query": "sequence by user.name with maxspan=30m\n    [any where event.dataset == \"okta.system\" and\n        kibana.alert.rule.rule_id == \"6f1bb4b2-7dc8-11ee-92b2-f661ea17fbcd\"]\n    [any where event.dataset == \"okta.system\" and\n        kibana.alert.rule.rule_id != null and\n        kibana.alert.severity != \"low\" and\n        kibana.alert.rule.rule_id not in  (\n            \"6f1bb4b2-7dc8-11ee-92b2-f661ea17fbcd\",\n            \"af2d8e4c-3b7c-4e91-8f5a-6c9d0e1f2a3b\"\n        )\n    ]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0228",
+    "query": "sequence by host.id with maxspan=10s\n  [process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and\n   process.parent.name == \"foomatic-rip\" and\n   process.name in (\"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\")] by process.entity_id\n  [network where host.os.type == \"linux\" and event.type == \"start\" and\n   event.action == \"connection_attempted\"] by process.parent.entity_id",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0234",
+    "query": "sequence by host.id, process.entity_id with maxspan=3s\n  [process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and \n   process.args == \"client\" and process.args : (\"R*\", \"*:*\", \"*socks*\") and process.args_count \u003e= 4 and \n   process.parent.name in (\"bash\", \"dash\", \"ash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\") and\n   not process.name in (\"velociraptor\", \"nbemmcmd\", \"redis-cli\", \"ipa\")]\n  [network where host.os.type == \"linux\" and event.action == \"connection_attempted\" and event.type == \"start\" and \n   destination.ip != null and destination.ip != \"127.0.0.1\" and destination.ip != \"::1\" and \n   not process.name : (\n     \"python*\", \"php*\", \"perl\", \"ruby\", \"lua*\", \"openssl\", \"nc\", \"netcat\", \"ncat\", \"telnet\", \"awk\", \"java\", \"telnet\",\n     \"ftp\", \"socat\", \"curl\", \"wget\", \"dpkg\", \"docker\", \"dockerd\", \"yum\", \"apt\", \"rpm\", \"dnf\", \"ssh\", \"sshd\", \"kubectl*\",\n     \"clickhouse\"\n   )]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0240",
+    "query": "sequence by host.id, process.entity_id with maxspan=5s\n  [network where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"connection_attempted\" and\n  process.executable like (\n    \"/boot/*\", \"/dev/shm/*\", \"/tmp/*\", \"/var/tmp/*\", \"/var/log/*\", \"/var/run/user/*\", \"/run/user/*\"\n  ) and\n  not (\n    destination.ip == null or\n    destination.ip == \"0.0.0.0\" or \n    cidrmatch(\n      destination.ip, \"10.0.0.0/8\", \"127.0.0.0/8\", \"169.254.0.0/16\", \"172.16.0.0/12\",\n      \"192.0.0.0/24\", \"192.0.0.0/29\",\"192.0.0.8/32\", \"192.0.0.9/32\", \"192.0.0.10/32\",\n      \"192.0.0.170/32\", \"192.0.0.171/32\", \"192.0.2.0/24\", \"192.31.196.0/24\", \"192.52.193.0/24\",\n      \"192.168.0.0/16\", \"192.88.99.0/24\", \"224.0.0.0/4\", \"100.64.0.0/10\", \"192.175.48.0/24\",\n      \"198.18.0.0/15\", \"198.51.100.0/24\", \"203.0.113.0/24\", \"240.0.0.0/4\", \"::1\", \"FE80::/10\",\n      \"FF00::/8\", \"FC00::/7\"\n    )\n  )]\n  [file where host.os.type == \"linux\" and event.type == \"creation\" and process.executable like (\n    \"/boot/*\", \"/dev/shm/*\", \"/tmp/*\", \"/var/tmp/*\", \"/var/log/*\", \"/boot/*\", \"/var/run/user/*\", \"/run/user/*\"\n  ) and\n  not (\n    file.name like \"tmp*\" or file.extension in (\"sqlite-journal\", \"db-journal\", \"lockfile\", \"tmp\") or\n    file.path like (\n      \"/loki/wal/*\", \"/dev/shm/.org.chromium.Chromium.*\", \"/opt/rapid7/nexpose/*\",\n      \"/usr/local/ltechagent*\", \"/var/lib/cloudendure/agent_keystore_temp\", \"/var/cache/yum/*\",\n      \"/run/aws-node/ipam.json.tmp*\", \"/run/systemd/journal/streams/.*\"\n    ) or\n    (process.executable == \"/tmp/terraform\" and file.path like \"/tmp/terraform-provider*\") or \n    process.name in (\"podman\", \"minikube\", \"logrotate\", \"java\", \"aws-k8s-agent\", \"grafana\", \"postman\") or\n    process.executable : (\n      \"/etc/cron.daily/logrotate\", \"/etc/update-motd.d/50-motd-news\", \"/etc/cron.hourly/0yum-hourly.cron\",\n      \"/etc/cron.hourly/BitdefenderRedline\", \"/tmp/token_handler\", \"/tmp/.sentry-cli*.exe\", \n      \"/etc/cron.daily/0yum-daily.cron\", \"/etc/init.d/fortiedr\"\n    )\n  )]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0246",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action in (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\") and\nprocess.name == \"unshadow\" and process.args_count \u003e= 3",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0252",
+    "query": "sequence by host.id, source.ip, user.name with maxspan=30s\n  [ authentication where host.os.type == \"linux\" and \n   event.action in (\"ssh_login\", \"user_login\") and event.outcome == \"failure\" and\n   not cidrmatch(source.ip, \"10.0.0.0/8\", \"127.0.0.0/8\", \"169.254.0.0/16\", \"172.16.0.0/12\", \"192.0.0.0/24\",\n       \"192.0.0.0/29\", \"192.0.0.8/32\", \"192.0.0.9/32\", \"192.0.0.10/32\", \"192.0.0.170/32\", \"192.0.0.171/32\",\n       \"192.0.2.0/24\", \"192.31.196.0/24\", \"192.52.193.0/24\", \"192.168.0.0/16\", \"192.88.99.0/24\", \"224.0.0.0/4\",\n       \"100.64.0.0/10\", \"192.175.48.0/24\",\"198.18.0.0/15\", \"198.51.100.0/24\", \"203.0.113.0/24\", \"240.0.0.0/4\", \n       \"::1\", \"FE80::/10\", \"FF00::/8\") ] with runs = 60",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0258",
+    "query": "sequence by host.id with maxspan=3s\n  [process where host.os.type == \"linux\" and event.type == \"end\" and process.name == \"sshd\"]\n  [process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and process.name == \"strace\"]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0264",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action in (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\") and (\n  (process.name == \"service\" and process.args == \"stop\") or\n  (process.name == \"chkconfig\" and process.args == \"off\") or\n  (process.name == \"update-rc.d\" and process.args in (\"remove\", \"disable\")) or\n  (process.name == \"systemctl\" and process.args in (\"disable\", \"stop\", \"kill\", \"mask\"))\n) and\nprocess.args in (\"auditd\", \"auditd.service\") and \nnot ?process.parent.name == \"auditd.prerm\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0270",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and\nevent.action in (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\", \"executed\", \"process_started\") and\nprocess.name == \"bpftool\" and (\n  (process.args == \"prog\" and process.args == \"detach\") or\n  (process.args == \"map\" and process.args in (\"delete\", \"update\")) or\n  (process.args == \"link\" and process.args == \"detach\")\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0276",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and\nevent.action in (\"exec\", \"start\", \"ProcessRollup2\", \"exec_event\") and process.name == \"mkdir\" and\nprocess.args like (\"/bin/*\", \"/usr/bin/*\", \"/usr/local/bin/*\", \"/sbin/*\", \"/usr/sbin/*\", \"/usr/local/sbin/*\") and\nnot process.args in (\"/bin/mkdir\", \"/usr/bin/mkdir\", \"/usr/local/bin/mkdir\", \"/usr/local/bin/cursor\", \"/usr/bin/coreutils\") and\nnot process.parent.executable in (\"/usr/bin/make\", \"/bin/make\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0282",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action in (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\", \"executed\", \"process_started\") and\nprocess.name == \"shred\" and (\n// Any short-flag cluster containing at least one of u/z, and containing no extra \"-\" after the first one\nprocess.args regex~ \"-[^-]*[uz][^-]*\" or\nprocess.args in (\"--remove\", \"--zero\")\n) and\nnot process.parent.name == \"logrotate\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0288",
+    "query": "sequence by host.id, process.parent.entity_id with maxspan=3s\n  [process where host.os.type == \"linux\" and event.type == \"start\" and event.action in (\"exec\", \"ProcessRollup2\") and (\n    (process.name in (\"base64\", \"base64plain\", \"base64url\", \"base64mime\", \"base64pem\", \"base32\", \"base16\") and process.command_line like~ \"*-*d*\") or\n    (process.name == \"openssl\" and process.args == \"enc\" and process.args in (\"-d\", \"-base64\", \"-a\")) or\n    (process.name like \"python*\" and\n    (process.args == \"base64\" and process.args in (\"-d\", \"-u\", \"-t\")) or\n    (process.args == \"-c\" and process.args like \"*base64*\" and process.command_line like~ \"*b64decode*\")\n    ) or\n    (process.name like \"perl*\" and process.command_line like~ \"*decode_base64*\") or\n    (process.name like \"ruby*\" and process.args == \"-e\" and process.command_line like~ \"*Base64.decode64*\")\n  )]\n [process where host.os.type == \"linux\" and event.type == \"start\" and event.action in (\"exec\", \"ProcessRollup2\") and process.name like~ (\n    \"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\", \"python*\", \"perl*\", \"ruby*\", \"lua*\", \"php*\"\n  ) and\n  not (\n    ?process.parent.command_line in (\n      \"bash ./run_tests.sh unit-integration\",\n      \"/bin/sh /var/lib/dpkg/info/nmap-common.postinst configure\",\n      \"bash -c base64 -d \u003c\u003c\u003c Zm9yIHN2YyBpbiBxZW11LWt2bSBvdnMtdnN3aXRjaGQgbGlidmlydGQgdmlydGxvY2tkIHBhY2VtYWtlciBwY3NkOyBkbyBzeXN0ZW1jdGwgaXMtYWN0aXZlICRzdmM7IGRvbmU= | bash -l\"\n    ) or\n    process.command_line == \"/usr/bin/perl /usr/bin/shasum -a 256\" or\n    ?process.working_directory like (\n      \"/usr/local/zeek\", \"/opt/zeek\", \"/var/lib/docker/overlay2/*/opt/zeek\", \"/usr/local/zeek_old_install\",\n      \"/var/lib/docker/overlay2/*/usr/local/zeek\", \"/proc/self/fd/*/usr/local/zeek\"\n    ) or\n    (?process.parent.name == \"zsh\" and ?process.parent.command_line like \"*extendedglob*\") or\n    (process.name like \"python*\" and ?process.parent.name == \"python*\") or\n    process.args like \"/tmp/apt-key-gpghome*\" or\n    ?process.parent.executable like (\"/home/*/.aimee-code/bin/claude\", \"/home/*/.aimee-code/bin/opencode\") or\n    ?process.parent.command_line like \"*/home/*/.claude/shell-snapshots/snapshot-*\"\n  )]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0294",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and\nevent.action in (\"exec\", \"exec_event\", \"executed\", \"process_started\", \"start\", \"ProcessRollup2\") and\n?process.parent.executable != null and\n(\n  (process.name == \"bash\" and process.args == \"-c\" and process.args like \"* enable *-f*.so*\") or\n  (process.name == \"openssl\" and process.args == \"-engine\" and process.args like \"*.so*\") or\n  (process.name like \"python*\" and process.args == \"-c\" and process.args like \"*cdll.LoadLibrary*.so*\") or\n  (process.name like \"ruby*\" and process.args == \"-e\" and process.args like \"*Fiddle.dlopen*.so*\") or \n  (process.name in (\"gdb\", \"gimp\", \"rview\", \"rvim\", \"view\", \"vim\", \"vimdiff\") and\n   process.args like \"*cdll.LoadLibrary*.so*\") or\n  (process.name in (\"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\") and\n   process.args == \"-c\" and process.args like (\"*cdll.LoadLibrary*.so*\", \"*ruby*-e**Fiddle.dlopen*.so*\")\n  )\n) and\nnot (\n  ?process.parent.executable like (\n    \"/root/.cache/bazel/_bazel_root/install/*\", \"/opt/Xilinx/PetaLinux/*\", \"/usr/bin/find\", \"/bin/find\", \n    \"/opt/nessus_agent/sbin/nessus-agent-module\", \"/sw/eb/sw/Python/*/bin/python*\"\n  ) or\n  ?process.parent.name in (\"make\", \"process-wrapper\", \"bwrap\") or\n  (process.name like \"python*\" and ?process.command_line like~ \"*import torch*torchinductor*\") or\n  ?process.command_line like \"*https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE*\"\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0300",
+    "query": "file where host.os.type == \"linux\" and event.action == \"rename\" and (\n  file.Ext.original.name : (\"*.vmdk\", \"*.vmx\", \"*.vmxf\", \"*.vmsd\", \"*.vmsn\", \"*.vswp\", \"*.vmss\", \"*.nvram\", \"*.vmem\") or\n  (file.name == \"index.html\" and file.Ext.original.path like \"/usr/lib/vmware/*\")\n)\nand not (\n  file.name : (\"*.vmdk\", \"*.vmx\", \"*.vmxf\", \"*.vmsd\", \"*.vmsn\", \"*.vswp\", \"*.vmss\", \"*.nvram\", \"*.vmem\") or\n  process.executable like (\n    \"/usr/sbin/gdm\", \"/usr/share/dotnet/dotnet\", \"/usr/bin/dotnet\", \"/usr/sbin/apache2\",\n    \"/var/lib/docker/overlay2/*/usr/bin/dotnet\", \"/usr/lib/3cxpbx/3cxSystemService\"\n  )\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0306",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and process.name == \"mount\" and \nprocess.args like (\"/tmp/*\", \"/var/tmp/*\", \"/dev/shm/*\", \"/home/*\", \"/root/*\", \"/mount\") and process.parent.executable != null and\nnot (\n  process.parent.executable like (\n    \"/bin/*\", \"/usr/bin/*\", \"/usr/local/bin/*\", \"/sbin/*\", \"/usr/sbin/*\", \"/usr/local/sbin/*\", \"/usr/libexec/*\",\n    \"/usr/local/nutanix/ngt/*/python\"\n  ) or\n  process.parent.executable in (\n    \"/usr/lib/uptrack/ksplice-apply\", \"/usr/lib/Acronis/BackupAndRecovery/mms\",\n    \"/usr/lib/Acronis/BackupAndRecovery/service_process-bin\", \"/usr/lib/systemd/systemd\", \"/etc/grub.d/10_linux_zfs\",\n    \"./tools/image-summary\", \"/nfsplugin\", \"/usr/share/ksplice/ksplice-apply\", \"/lib/systemd/systemd\"\n  ) or\n  process.parent.name == \"snapd\"\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0312",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and\nevent.action in (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\", \"executed\", \"process_started\") and\nprocess.name in (\"curl\", \"socat\", \"nc\", \"netcat\", \"ncat\", \"nc.traditional\") and\nprocess.args like (\"*/var/run/docker.sock*\", \"*/run/docker.sock*\") and\nprocess.parent.executable != null and\nnot (\n  process.parent.executable in (\"/usr/sbin/sshd\", \"/www/server/panel/BT-Panel\") or\n  process.parent.args in (\"/usr/libexec/netdata/plugins.d/cgroup-name.sh\", \"/docker-entrypoint\")\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0318",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and\n(process.parent.args like \"/boot/*\" or process.args like \"/boot/*\") and (\n  (process.name in (\"file\", \"unlzma\", \"gunzip\", \"unxz\", \"bunzip2\", \"unzstd\", \"unzip\", \"tar\")) or\n  (process.name == \"grep\" and process.args == \"ELF\") or\n  (process.name in (\"lzop\", \"lz4\") and process.args in (\"-d\", \"--decode\"))\n) and\nnot (\n  process.parent.name == \"mkinitramfs\" or\n  process.parent.executable like (\n    \"/usr/lib/needrestart/vmlinuz-get-version\", \"/usr/libexec/platform-python*\", \"/tmp/newroot/usr/libexec/platform-python*\",\n    \"/usr/bin/kdumpctl\", \"/usr/bin/stap-report\", \"/usr/sbin/nv-update-initrd\"\n  ) or\n  process.parent.command_line like \"*ansible*\" or\n  process.parent.args == \"/usr/bin/kdumpctl\"\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0324",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and\nevent.action in (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\", \"executed\", \"process_started\") and\nprocess.name == \"sudo\" and process.args in (\"-n\", \"--non-interactive\") and process.args == \"true\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0330",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and\nevent.action in (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\") and\nprocess.name in (\"cat\", \"less\", \"more\", \"strings\", \"find\", \"xargs\") and\nprocess.parent.executable != null and \nprocess.args like (\n  \"/etc/security/*\", \"/etc/pam.d/*\", \"/etc/login.defs\", \"/lib/security/*\", \"/lib64/security/*\",\n  \"/usr/lib/security/*\", \"/usr/lib64/security/*\", \"/usr/lib/x86_64-linux-gnu/security/*\",\n  \"/home/*/.aws/credentials\", \"/home/*/.aws/config\", \"/home/*/.config/gcloud/*credentials.json\",\n  \"/home/*/.config/gcloud/configurations/config_default\", \"/home/*/.azure/accessTokens.json\",\n  \"/home/*/.azure/azureProfile.json\"\n) and not (\n  process.parent.name in (\"wazuh-modulesd\", \"lynis\") or\n  process.command_line in (\"cat /etc/login.defs\" , \"cat /home/asterisk/.aws/credentials\") or\n  ?process.parent.command_line in (\n    \"/bin/sh /usr/sbin/lynis audit system --cronjob\",\n    \"/usr/bin/find -L /etc/security/limits.conf /etc/security/limits.d -type f -exec /usr/bin/cat {} ;\",\n    \"/usr/bin/find /etc/security/limits.conf /etc/security/limits.d -type f -exec /usr/bin/cat {} ;\"\n  ) or\n  ?process.parent.args in (\"/opt/imperva/ragent/bin/get_sys_resources.sh\", \"/usr/sbin/lynis\", \"./terra_linux.sh\") or\n  process.args == \"/usr/bin/coreutils\" or\n  (process.parent.name == \"pwsh\" and process.parent.command_line like \"*Evaluate-STIG*\") or\n  ?process.parent.executable like (\n    \"/usr/sap/audit_scripts/auto_audit_gral.sh\", \"/opt/saltstack/salt/bin/python3*\", \"/opt/puppetlabs/puppet/bin/ruby\"\n  ) or\n  ?process.entry_leader.executable like (\n    \"/usr/sbin/ScanAssistant\", \"/opt/Tanium/TaniumClient/TaniumClient\", \"/tmp/CVU_*resource/exectask\", \"/opt/nessus/sbin/nessus-service\"\n  )\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0336",
+    "query": "sequence by host.id, process.parent.entity_id with maxspan=1s\n  [process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and\n   process.name == \"id\" and process.args_count == 2 and\n   not (\n     process.parent.name in (\"rpm\", \"snarftmp\", \"quota_copy\", \"java\") or\n     process.parent.args like (\n       \"/var/tmp/rpm-tmp*\", \"/tmp/netdata-kickstart.sh\", \"./k8s-certifikator.sh\", \"/usr/local/bin/docker-entrypoint.sh\",\n       \"./set_quota.sh\"\n     ) or\n     (process.parent.name == \"java\" and process.args == \"oracle\")\n   )] with runs=20",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0342",
+    "query": "sequence by host.id with maxspan=10s\n  [process where host.os.type == \"linux\" and event.type == \"start\" and event.action in (\"exec\", \"start\") and\n   process.parent.name == \"foomatic-rip\" and\n   process.name in (\"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\")] by process.entity_id\n  [file where host.os.type == \"linux\" and event.type != \"deletion\" and\n   not (\n     (process.name == \"gs\" and file.path like (\"/tmp/gs_*\", \"/var/spool/cups/tmp/gs_*\")) or\n     (process.name == \"pdftops\" and file.path like \"/tmp/0*\")\n   )] by process.parent.entity_id",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0348",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and\nprocess.entry_leader.entry_meta.type == \"container\" and process.name in (\"chmod\", \"chown\") and\nprocess.args in (\"4755\", \"755\", \"000\", \"777\", \"444\", \"+x\") and\nprocess.args like (\"/dev/shm/*\", \"/tmp/*\", \"/var/tmp/*\", \"/run/*\", \"/var/run/*\", \"/mnt/*\", \"/media/*\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0354",
+    "query": "sequence by host.id with maxspan=1m\n  [process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and\n   process.name like~ (\n     \"gcc*\", \"g++*\", \"c++\", \"cc\", \"c99\", \"c89\", \"cc1*\", \"cc1plus*\", \"clang*\", \"clang++*\",\n     \"musl-gcc\", \"musl-clang\", \"*-linux-gnu-gcc*\", \"*-linux-gnu-g++*\", \"*-pc-linux-gnu-gcc*\",\n     \"tcc\", \"zig\", \"ccache\", \"distcc\"\n   )] by process.args\n  [file where host.os.type == \"linux\" and event.action == \"creation\" and process.name like~ (\n    \"ld\", \"ld.*\", \"lld\", \"ld.lld\", \"mold\", \"collect2\", \"*-linux-gnu-ld*\", \"*-pc-linux-gnu-ld*\"\n   )] by file.name\n  [process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\"] by process.name\n  [network where host.os.type == \"linux\" and event.action == \"connection_attempted\" and destination.ip != null and not (\n     cidrmatch(destination.ip, \"127.0.0.0/8\", \"169.254.0.0/16\", \"224.0.0.0/4\", \"::1\") or\n     process.name in (\n       \"simpleX\", \"conftest\", \"ssh\", \"python\", \"ispnull\", \"pvtui\", \"npreal2d\", \"ruby\", \"source\", \"ssh\", \"git-remote-http\",\n       \"sshd-session\", \"gendb\", \"sqlplus\"\n     )\n   )] by process.name",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0360",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action in (\"exec\", \"exec_event\", \"start\") and\n(\n  (process.parent.name : \"python*\" and process.name in (\"bash\", \"dash\", \"ash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\",\n   \"fish\") and process.parent.args_count \u003e= 3 and process.parent.args : \"*pty.spawn*\" and process.parent.args : \"-c\") or\n  (process.parent.name : \"python*\" and process.name in (\"bash\", \"dash\", \"ash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\") and\n   process.args in (\n     \"sh\", \"dash\", \"bash\", \"zsh\",\n     \"/bin/sh\", \"/bin/dash\", \"/bin/bash\", \"/bin/zsh\",\n     \"/usr/bin/sh\", \"/usr/bin/dash\", \"/usr/bin/bash\", \"/usr/bin/zsh\",\n     \"/usr/local/bin/sh\", \"/usr/local/bin/dash\", \"/usr/local/bin/bash\", \"/usr/local/bin/zsh\"\n   ) and process.args_count == 1 and process.parent.args_count == 1\n  )\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0366",
+    "query": "sequence by host.id with maxspan=5s\n  [network where host.os.type == \"linux\" and event.action in (\"connection_accepted\", \"connection_attempted\") and\n   process.executable : (\"/usr/bin/java\", \"/bin/java\", \"/usr/lib/jvm/*\", \"/usr/java/*\") and\n   not (destination.ip == null or destination.ip == \"0.0.0.0\" or cidrmatch(\n     destination.ip, \"10.0.0.0/8\", \"127.0.0.0/8\", \"169.254.0.0/16\", \"172.16.0.0/12\", \"192.0.0.0/24\", \"192.0.0.0/29\",\n     \"192.0.0.8/32\", \"192.0.0.9/32\", \"192.0.0.10/32\", \"192.0.0.170/32\", \"192.0.0.171/32\", \"192.0.2.0/24\",\n     \"192.31.196.0/24\", \"192.52.193.0/24\", \"192.168.0.0/16\", \"192.88.99.0/24\", \"224.0.0.0/4\", \"100.64.0.0/10\",\n     \"192.175.48.0/24\",\"198.18.0.0/15\", \"198.51.100.0/24\", \"203.0.113.0/24\", \"240.0.0.0/4\", \"::1\", \"FE80::/10\",\n     \"FF00::/8\"\n    )\n  )] by process.entity_id\n  [process where host.os.type == \"linux\" and event.action == \"exec\" and\n   process.parent.executable : (\"/usr/bin/java\", \"/bin/java\", \"/usr/lib/jvm/*\", \"/usr/java/*\") and\n   process.parent.args : \"-jar\" and process.name in (\"bash\", \"dash\", \"ash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\")\n   and not (\n     process.parent.args in (\n       \"/usr/lib/jenkins/jenkins.war\", \"/etc/remote-iot/services/remoteiot.jar\", \"/opt/pentaho/data-integration/launcher/launcher.jar\",\n       \"/usr/share/java/jenkins.war\", \"/opt/tomcat/statistics/statistics.jar\", \"/usr/lib64/NetExtender.jar\",\n       \"/var/lib/jenkins/workspace/MP-QA/tc_certified_copy*/tc_certified_copy_web_ui_test/target/surefire/surefirebooter*.jar\",\n       \"-javaagent:/opt/opentelemetry/opentelemetry-javaagent-all.jar\", \"./lib/pipeline-job-executor*SNAPSHOT.jar\",\n       \"./lib/worker-launcher-agent*SNAPSHOT.jar\", \"/opt/Seqrite_EndPoint_Security/wildfly/jboss-modules.jar\",\n       \"/home/data/jenkins.war\", \"/pro/service-modules/deployment.jar\", \"/application/HES/READER/*.jar\", \"*-SNAPSHOT.jar\",\n       \"READER/G1A/READER_G1A.jar\", \"READER_G1.jar\"\n     ) or\n    process.command_line like~ (\n      \"bash -c ps -eo pid,lstart,comm*\",\n      \"bash -c df -i /application | tail -n 1\",\n      \"/bin/sh -xe /tmp/hudson*.sh\",\n      \"bash -c cat /application/HES/*\"\n    )\n   )] by process.parent.entity_id",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0372",
+    "query": "process where host.os.type == \"linux\" and event.action in (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\") and\n((process.args == \"tail\" and process.args == \"-c\" and process.args == \"funzip\")) and\nnot process.args : \"/var/log/messages\" and\nnot ?process.parent.executable : (\"/usr/bin/dracut\", \"/sbin/dracut\", \"/usr/bin/xargs\") and\nnot (process.parent.name in (\"sh\", \"sudo\") and ?process.parent.command_line : \"*nessus_su*\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0378",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and\n event.action in (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\") and\n (\n  (process.name in (\"nc\", \"ncat\", \"netcat\", \"nc.openbsd\") and\n   process.args == \"-U\" and process.args : (\"/usr/local/*\", \"/run/*\", \"/var/run/*\")) or\n  (process.name == \"socat\" and\n   process.args == \"-\" and process.args : (\"UNIX-CLIENT:/usr/local/*\", \"UNIX-CLIENT:/run/*\", \"UNIX-CLIENT:/var/run/*\")) or\n  (process.name == \"curl\" and process.args : (\"--unix-socket\", \"--abstract-unix-socket\"))\n) and\nnot (\n  process.args == \"/var/run/libvirt/libvirt-sock\" or\n  process.parent.name in (\"bundle\", \"ruby\", \"haproxystatus.sh\") or\n  process.parent.command_line == \"sh /docker-entrypoint autoheal\" or\n  process.command_line like \"*runtime.autoheal*\" or\n  process.parent.executable == \"/app/letsencrypt_service\" or\n  process.parent.args in (\"/usr/libexec/netdata/plugins.d/cgroup-name.sh\", \"/healthcheck\") or\n  ?process.working_directory == \"/app\"\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0384",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action in (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\") and\n?process.parent.executable != null and\nprocess.name in (\"swapon\", \"swapoff\") or (\n  process.command_line like (\"*vm.swappiness*\", \"*/proc/sys/vm/swappiness*\") and (\n    (process.name == \"sysctl\" and process.args like (\"*-w*\", \"*--write*\", \"*=*\")) or\n    (\n      process.name in (\"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\") and process.args == \"-c\" and\n      process.command_line like \"*echo *\"\n    )\n  )\n) and\nnot (\n  process.parent.name in (\"lynis\", \"systemd\", \"end-zram-swapping\", \"SyxsenseResponder\", \"tuned\", \"platform-python\", \"timeout\") or\n  ?process.parent.executable in (\"/opt/puppetlabs/puppet/bin/ruby\", \"/u01/app/grid/perl/bin/perl\")\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0390",
+    "query": "file where host.os.type == \"linux\" and event.type != \"deletion\" and file.path like (\n  \"/root/.kube/config\",\n  \"/home/*/.kube/config\",\n  \"/etc/kubernetes/admin.conf\",\n  \"/etc/kubernetes/super-admin.conf\",\n  \"/etc/kubernetes/kubelet.conf\",\n  \"/etc/kubernetes/controller-manager.conf\",\n  \"/etc/kubernetes/scheduler.conf\",\n  \"/var/lib/*/kubeconfig\"\n) and not (\n  process.name in (\"kubeadm\", \"kubelet\", \"vcluster\", \"minikube\", \"kind\") or\n  (process.name == \"sed\" and ?file.Ext.original.name like \"sed*\") or\n  process.executable like (\n    \"/usr/local/bin/k3d\", \"/usr/local/aws-cli/*/dist/aws\", \"/usr/local/bin/ks\", \"/usr/local/bin/aws\",\n    \"/usr/local/bin/kubectl\"\n  )\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0396",
+    "query": "file where host.os.type == \"linux\" and event.action in (\"rename\", \"creation\") and\nfile.path : \"/etc/apt/apt.conf.d/*\" and not (\n  process.executable in (\n    \"/bin/dpkg\", \"/usr/bin/dpkg\", \"/bin/dockerd\", \"/usr/bin/dockerd\", \"/usr/sbin/dockerd\", \"/bin/microdnf\",\n    \"/usr/bin/microdnf\", \"/bin/rpm\", \"/usr/bin/rpm\", \"/bin/snapd\", \"/usr/bin/snapd\", \"/bin/yum\", \"/usr/bin/yum\",\n    \"/bin/dnf\", \"/usr/bin/dnf\", \"/bin/podman\", \"/usr/bin/podman\", \"/bin/dnf-automatic\", \"/usr/bin/dnf-automatic\",\n    \"/bin/pacman\", \"/usr/bin/pacman\", \"/usr/bin/dpkg-divert\", \"/bin/dpkg-divert\", \"/sbin/apk\", \"/usr/sbin/apk\",\n    \"/usr/local/sbin/apk\", \"/usr/bin/apt\", \"/usr/sbin/pacman\", \"/bin/podman\", \"/usr/bin/podman\", \"/usr/bin/puppet\",\n    \"/bin/puppet\", \"/opt/puppetlabs/puppet/bin/puppet\", \"/usr/bin/chef-client\", \"/bin/chef-client\",\n    \"/bin/autossl_check\", \"/usr/bin/autossl_check\", \"/proc/self/exe\", \"/dev/fd/*\",  \"/usr/bin/pamac-daemon\",\n    \"/bin/pamac-daemon\", \"/usr/lib/snapd/snapd\", \"/usr/local/bin/dockerd\", \"/usr/libexec/netplan/generate\",\n    \"/usr/local/bin/apt-get\", \"/usr/bin/apt-get\", \"./usr/bin/podman\", \"/usr/bin/buildah\", \"/.envbuilder/bin/envbuilder\",\n    \"/opt/puppetlabs/puppet/bin/ruby\", \"/usr/bin/pvedaemon\", \"/usr/bin/percona-release\", \"/usr/bin/crio\"\n  ) or\n  file.path :(\"/etc/apt/apt.conf.d/*.tmp*\") or\n  file.extension in (\"swp\", \"swpx\", \"swx\", \"dpkg-remove\", \"dpkg-new\") or\n  file.Ext.original.extension == \"dpkg-new\" or\n  file.Ext.original.name == \".source\" or\n  process.executable : (\n    \"/nix/store/*\", \"/var/lib/dpkg/*\", \"/tmp/vmis.*\", \"/snap/*\", \"/dev/fd/*\", \"/usr/lib/*\", \"/usr/libexec/*\",\n    \"/etc/kernel/*\", \"/opt/saltstack/salt/bin/python*\"\n  ) or\n  process.executable == null or\n  process.name in (\"pveupdate\", \"perl\", \"executor\", \"crio\", \"docker-init\", \"dockerd\", \"pvedaemon\") or\n  (process.name == \"sed\" and file.name : \"sed*\") or\n  (process.name == \"perl\" and file.name : \"e2scrub_all.tmp*\") or\n  /* adding known file paths to reduce false positives */\n  file.path in (\n    \"/etc/apt/apt.conf.d/50unattended-upgrades\",\n    \"/etc/apt/apt.conf.d/02autoremove-postgresql\",\n    \"/etc/apt/apt.conf.d/99rain-noautoupgrades\",\n    \"/etc/apt/apt.conf.d/99no-check-valid-until\",\n    \"/etc/apt/apt.conf.d/50isar-apt\",\n    \"/etc/apt/apt.conf.d/99gitlab-ci-cache\",\n    \"/etc/apt/apt.conf.d/50unattended-upgrades.ucf-dist\",\n    \"/etc/apt/apt.conf.d/01autoremove-kernels\",\n    \"/etc/apt/apt.conf.d/01autoremove\",\n    \"/etc/apt/apt.conf.d/95proxies\",\n    \"/etc/apt/apt.conf.d/99-noninteractive\"\n  )\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0402",
+    "query": "file where host.os.type == \"linux\" and event.action in (\"rename\", \"creation\") and file.path like (\n  \"/etc/cron.allow\", \"/etc/cron.deny\", \"/etc/cron.d/*\", \"/etc/cron.hourly/*\", \"/etc/cron.daily/*\", \"/etc/cron.weekly/*\",\n  \"/etc/cron.monthly/*\", \"/etc/crontab\", \"/var/spool/cron/crontabs/*\", \"/var/spool/anacron/*\"\n) and not (\n  process.executable in (\n    \"/bin/dpkg\", \"/usr/bin/dpkg\", \"/bin/dockerd\", \"/usr/bin/dockerd\", \"/usr/sbin/dockerd\", \"/bin/microdnf\",\n    \"/usr/bin/microdnf\", \"/bin/rpm\", \"/usr/bin/rpm\", \"/bin/snapd\", \"/usr/bin/snapd\", \"/bin/yum\", \"/usr/bin/yum\",\n    \"/bin/dnf\", \"/usr/bin/dnf\", \"/bin/podman\", \"/usr/bin/podman\", \"/bin/dnf-automatic\", \"/usr/bin/dnf-automatic\",\n    \"/bin/pacman\", \"/usr/bin/pacman\", \"/usr/bin/dpkg-divert\", \"/bin/dpkg-divert\", \"/sbin/apk\", \"/usr/sbin/apk\",\n    \"/usr/local/sbin/apk\", \"/usr/bin/apt\", \"/usr/sbin/pacman\", \"/bin/podman\", \"/usr/bin/podman\", \"/usr/bin/puppet\",\n    \"/bin/puppet\", \"/opt/puppetlabs/puppet/bin/puppet\", \"/usr/bin/chef-client\", \"/bin/chef-client\",\n    \"/bin/autossl_check\", \"/usr/bin/autossl_check\", \"/proc/self/exe\", \"/usr/bin/pamac-daemon\",\n    \"/bin/pamac-daemon\", \"/usr/local/bin/dockerd\", \"/opt/elasticbeanstalk/bin/platform-engine\",\n    \"/opt/puppetlabs/puppet/bin/ruby\", \"/usr/libexec/platform-python\", \"/opt/imunify360/venv/bin/python3\",\n    \"/opt/eset/efs/lib/utild\", \"/usr/sbin/anacron\", \"/usr/bin/podman\", \"/kaniko/kaniko-executor\",\n    \"/usr/bin/pvedaemon\", \"./usr/bin/podman\", \"/usr/lib/systemd/systemd\", \"./usr/bin/podman\", \"/usr/bin/coreutils\",\n    \"/usr/sbin/univention-config-registry\", \"/usr/bin/dnf5\", \"./usr/lib/snapd/snap-update-ns\"\n  ) or\n  file.path like (\"/var/spool/cron/crontabs/tmp.*\", \"/etc/cron.d/jumpcloud-updater\") or\n  file.extension in (\"swp\", \"swpx\", \"swx\", \"dpkg-remove\") or\n  file.Ext.original.extension == \"dpkg-new\" or\n  process.executable like (\n    \"/nix/store/*\", \"/var/lib/dpkg/*\", \"/tmp/vmis.*\", \"/snap/*\", \"/dev/fd/*\", \"/usr/libexec/platform-python*\",\n    \"/var/lib/waagent/Microsoft*\"\n  ) or\n  process.executable == null or\n  process.name in (\n    \"crond\", \"executor\", \"puppet\", \"droplet-agent.postinst\", \"cf-agent\", \"schedd\", \"imunify-notifier\",\n    \"jumpcloud-agent\", \"crio\", \"dnf_install\", \"utild\"\n  ) or\n  (process.name == \"sed\" and file.name like \"sed*\") or\n  (process.name == \"perl\" and file.name like \"e2scrub_all.tmp*\")  or\n  (process.name in (\"vi\", \"vim\") and file.name like \"*~\")\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0408",
+    "query": "sequence by process.entity_id with maxspan=1m\n  [process where host.os.type == \"linux\" and event.type == \"start\" and process.name in (\"cp\", \"rsync\", \"mv\") and\n  process.args in (\n   \"/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2\", \"/etc/ld.so.preload\", \"/lib64/ld-linux-x86-64.so.2\",\n   \"/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2\", \"/usr/lib64/ld-linux-x86-64.so.2\"\n  ) and\n  not process.args like (\"/var/tmp/mkinitramfs*\", \"/var/tmp/dracut*\", \"/tmp/mkinitcpio*\")]\n[file where host.os.type == \"linux\" and event.action == \"creation\" and (file.extension == \"so\" or file.name like \"*.so.*\")]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0414",
+    "query": "file where host.os.type == \"linux\" and event.type == \"creation\" and process.executable != null and file.path like~ (\n  \"/etc/default/grub.d/*\", \"/etc/default/grub\", \"/etc/grub.d/*\",\n  \"/boot/grub2/grub.cfg\", \"/boot/grub/grub.cfg\", \"/boot/efi/EFI/*/grub.cfg\",\n  \"/etc/sysconfig/grub\"\n) and not (\n  /* Too many FPs from Python automation */\n  process.name like (\"python*\", \"platform-python*\") or\n  process.executable in (\n    \"/bin/dpkg\", \"/usr/bin/dpkg\", \"/bin/dockerd\", \"/usr/bin/dockerd\", \"/usr/sbin/dockerd\", \"/bin/microdnf\",\n    \"/usr/bin/microdnf\", \"/bin/rpm\", \"/usr/bin/rpm\", \"/bin/snapd\", \"/usr/bin/snapd\", \"/bin/yum\", \"/usr/bin/yum\",\n    \"/bin/dnf\", \"/usr/bin/dnf\", \"/bin/podman\", \"/usr/bin/podman\", \"/bin/dnf-automatic\", \"/usr/bin/dnf-automatic\",\n    \"/bin/pacman\", \"/usr/bin/pacman\", \"/usr/bin/dpkg-divert\", \"/bin/dpkg-divert\", \"/sbin/apk\", \"/usr/sbin/apk\",\n    \"/usr/local/sbin/apk\", \"/usr/bin/apt\", \"/usr/sbin/pacman\", \"/bin/podman\", \"/usr/bin/podman\", \"/usr/bin/puppet\",\n    \"/bin/puppet\", \"/opt/puppetlabs/puppet/bin/puppet\", \"/usr/bin/chef-client\", \"/bin/chef-client\",\n    \"/bin/autossl_check\", \"/usr/bin/autossl_check\", \"/proc/self/exe\", \"/usr/bin/pamac-daemon\",\n    \"/bin/pamac-daemon\", \"/usr/lib/snapd/snapd\", \"/usr/local/bin/dockerd\", \"/usr/bin/crio\", \"/usr/sbin/crond\",\n    \"/opt/puppetlabs/puppet/bin/ruby\", \"/usr/libexec/platform-python\", \"/kaniko/kaniko-executor\",\n    \"/usr/local/bin/dockerd\", \"/usr/bin/podman\", \"/bin/install\", \"/proc/self/exe\", \"/usr/lib/systemd/systemd\",\n    \"/usr/sbin/sshd\", \"/usr/bin/gitlab-runner\", \"/opt/gitlab/embedded/bin/ruby\", \"/usr/sbin/gdm\", \"/usr/bin/install\",\n    \"/usr/local/manageengine/uems_agent/bin/dcregister\", \"/usr/local/bin/pacman\", \"./usr/bin/podman\", \"/usr/bin/dnf5\",\n    \"/usr/sbin/yum-cron\"\n  ) or\n  process.executable like~ (\n    \"/nix/store/*\", \"/var/lib/dpkg/*\", \"/tmp/vmis.*\", \"/snap/*\", \"/dev/fd/*\", \"/usr/lib/virtualbox/*\"\n  ) or\n  file.extension in (\"swp\", \"swpx\", \"swx\", \"dpkg-remove\") or\n  (process.name == \"sed\" and file.name : \"sed*\")\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0420",
+    "query": "driver where host.os.type == \"linux\" and event.action == \"loaded-kernel-module\" and\nauditd.data.syscall in (\"init_module\", \"finit_module\") and user.id != \"0\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0426",
+    "query": "iam where host.os.type == \"linux\" and event.type == \"user\" and event.type == \"creation\" and event.outcome == \"success\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0432",
+    "query": "file where host.os.type == \"linux\" and event.type == \"creation\" and file.path like \"/etc/NetworkManager/dispatcher.d/*\" and\nnot (\n  process.executable in (\n    \"/bin/dpkg\", \"/usr/bin/dpkg\", \"/bin/dockerd\", \"/usr/bin/dockerd\", \"/usr/sbin/dockerd\", \"/bin/microdnf\",\n    \"/usr/bin/microdnf\", \"/bin/rpm\", \"/usr/bin/rpm\", \"/bin/snapd\", \"/usr/bin/snapd\", \"/bin/yum\", \"/usr/bin/yum\",\n    \"/bin/dnf\", \"/usr/bin/dnf\", \"/bin/podman\", \"/usr/bin/podman\", \"/bin/dnf-automatic\", \"/usr/bin/dnf-automatic\",\n    \"/bin/pacman\", \"/usr/bin/pacman\", \"/usr/bin/dpkg-divert\", \"/bin/dpkg-divert\", \"/sbin/apk\", \"/usr/sbin/apk\",\n    \"/usr/local/sbin/apk\", \"/usr/bin/apt\", \"/usr/sbin/pacman\", \"/bin/podman\", \"/usr/bin/podman\", \"/usr/bin/puppet\",\n    \"/bin/puppet\", \"/opt/puppetlabs/puppet/bin/puppet\", \"/usr/bin/chef-client\", \"/bin/chef-client\",\n    \"/bin/autossl_check\", \"/usr/bin/autossl_check\", \"/proc/self/exe\",  \"/usr/bin/pamac-daemon\", \"./usr/bin/podman\",\n    \"/bin/pamac-daemon\", \"/usr/lib/snapd/snapd\", \"/usr/local/bin/dockerd\", \"/usr/bin/crio\", \"/usr/sbin/crond\",\n    \"/opt/puppetlabs/puppet/bin/ruby\", \"/usr/libexec/platform-python\", \"/kaniko/kaniko-executor\",\n    \"/usr/local/bin/dockerd\", \"/usr/bin/podman\", \"/bin/install\", \"/proc/self/exe\", \"/usr/lib/systemd/systemd\",\n    \"/usr/sbin/sshd\", \"/usr/bin/gitlab-runner\", \"/opt/gitlab/embedded/bin/ruby\", \"/usr/sbin/gdm\", \"/usr/bin/install\",\n    \"/usr/local/manageengine/uems_agent/bin/dcregister\", \"/usr/local/bin/pacman\", \"./usr/bin/qemu-aarch64-static\"\n  ) or\n  process.executable like~ (\n    \"/nix/store/*\", \"/var/lib/dpkg/*\", \"/tmp/vmis.*\", \"/snap/*\", \"/dev/fd/*\", \"/usr/lib/virtualbox/*\"\n  ) or\n  file.extension in (\"swp\", \"swpx\", \"swx\", \"dpkg-remove\") or\n  (process.name == \"sed\" and file.name : \"sed*\") or\n  (\n    process.executable like (\"/kaniko/executor\", \"/usr/libexec/platform-python*\") and\n    file.path like \"/etc/NetworkManager/dispatcher.d/11-dhclient*\"\n  )\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0438",
+    "query": "file where host.os.type == \"linux\" and event.type == \"creation\" and process.executable != null and\nfile.extension in (\"rules\", \"pkla\", \"policy\") and file.path like~ (\n\n  // Rule files\n  \"/etc/polkit-1/rules.d/*\", \"/usr/share/polkit-1/rules.d/*\",\n\n  // pkla files\n  \"/etc/polkit-1/localauthority/*\", \"/var/lib/polkit-1/localauthority/*\",\n\n  // Action files\n  \"/usr/share/polkit-1/actions/*\",\n\n  // Misc. legacy paths\n  \"/lib/polkit-1/rules.d/*\", \"/lib64/polkit-1/rules.d/*\", \"/var/lib/polkit-1/rules.d/*\"\n) and not (\n  process.executable in (\n    \"/bin/dpkg\", \"/usr/bin/dpkg\", \"/bin/dockerd\", \"/usr/bin/dockerd\", \"/usr/sbin/dockerd\", \"/bin/microdnf\",\n    \"/usr/bin/microdnf\", \"/bin/rpm\", \"/usr/bin/rpm\", \"/bin/snapd\", \"/usr/bin/snapd\", \"/bin/yum\", \"/usr/bin/yum\",\n    \"/bin/dnf\", \"/usr/bin/dnf\", \"/bin/podman\", \"/usr/bin/podman\", \"/bin/dnf-automatic\", \"/usr/bin/dnf-automatic\",\n    \"/bin/pacman\", \"/usr/bin/pacman\", \"/usr/bin/dpkg-divert\", \"/bin/dpkg-divert\", \"/sbin/apk\", \"/usr/sbin/apk\",\n    \"/usr/local/sbin/apk\", \"/usr/bin/apt\", \"/usr/sbin/pacman\", \"/bin/podman\", \"/usr/bin/podman\", \"/usr/bin/puppet\",\n    \"/bin/puppet\", \"/opt/puppetlabs/puppet/bin/puppet\", \"/usr/bin/chef-client\", \"/bin/chef-client\",\n    \"/bin/autossl_check\", \"/usr/bin/autossl_check\", \"/proc/self/exe\", \"/usr/bin/pamac-daemon\",\n    \"/bin/pamac-daemon\", \"/usr/lib/snapd/snapd\", \"/usr/local/bin/dockerd\", \"/usr/bin/crio\", \"/usr/sbin/crond\",\n    \"/opt/puppetlabs/puppet/bin/ruby\", \"/usr/libexec/platform-python\", \"/kaniko/kaniko-executor\",\n    \"/usr/local/bin/dockerd\", \"/usr/bin/podman\", \"/bin/install\", \"/proc/self/exe\", \"/usr/lib/systemd/systemd\",\n    \"/usr/sbin/sshd\", \"/usr/bin/gitlab-runner\", \"/opt/gitlab/embedded/bin/ruby\", \"/usr/sbin/gdm\", \"/usr/bin/install\",\n    \"/usr/local/manageengine/uems_agent/bin/dcregister\", \"/usr/local/bin/pacman\", \"./usr/bin/podman\",\n    \"/kaniko/executor\", \"/opt/kaniko/executor\", \"/usr/bin/buildah\", \"/usr/lib/cargo/bin/coreutils/install\"\n  ) or\n  process.executable like (\n    \"/nix/store/*\", \"/var/lib/dpkg/*\", \"/tmp/vmis.*\", \"/snap/*\", \"/dev/fd/*\", \"/usr/lib/virtualbox/*\",\n    \"/var/lib/containers/storage/overlay/*/dockerd\", \"/var/lib/docker/overlay2/*/dockerd\"\n  ) or\n  (process.name like \"python*\" and file.name like \".ansible_tmp*.rules\")\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0444",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and\nevent.action in (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\") and \nprocess.name == \"setcap\" and process.args : \"cap_set?id+ep\" and not (\n  process.parent.name in (\"jem\", \"vzctl\") or\n  process.args like \"/usr/bin/new?idmap\"\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0450",
+    "query": "file where host.os.type == \"linux\" and event.action in (\"creation\", \"file_create_event\") and\nprocess.executable == \"/usr/bin/ssh-keygen\" and file.path : (\"/home/*/.ssh/*\", \"/root/.ssh/*\", \"/etc/ssh/*\") and\nnot file.name : \"known_hosts.*\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0456",
+    "query": "file where host.os.type == \"linux\" and event.action in (\"rename\", \"creation\") and\nfile.extension == \"conf\" and file.path like (\n  \"/etc/systemd/system/*.d/*.conf\", \"/etc/systemd/user/*.d/*.conf\", \"/usr/local/lib/systemd/system/*.d/*.conf\",\n  \"/lib/systemd/system/*.d/*.conf\", \"/usr/lib/systemd/system/*.d/*.conf\", \"/usr/lib/systemd/user/*.d/*.conf\",\n  \"/home/*/.config/systemd/user/*.d/*.conf\", \"/home/*/.local/share/systemd/user/*.d/*.conf\",\n  \"/root/.config/systemd/user/*.d/*.conf\", \"/root/.local/share/systemd/user/*.d/*.conf\",\n  \"/run/systemd/system/*.d/*.conf\", \"/var/run/systemd/system/*.d/*.conf\"\n) and\nnot process.executable in (\n  \"/bin/dpkg\", \"/usr/bin/dpkg\", \"/bin/dockerd\", \"/usr/bin/dockerd\", \"/usr/sbin/dockerd\", \"/bin/microdnf\",\n  \"/usr/bin/microdnf\", \"/bin/rpm\", \"/usr/bin/rpm\", \"/bin/snapd\", \"/usr/bin/snapd\", \"/bin/yum\", \"/usr/bin/yum\",\n  \"/bin/dnf\", \"/usr/bin/dnf\", \"/bin/podman\", \"/usr/bin/podman\", \"/bin/dnf-automatic\", \"/usr/bin/dnf-automatic\",\n  \"/usr/bin/dpkg-divert\", \"/bin/dpkg-divert\", \"/sbin/apk\", \"/usr/sbin/apk\", \"/usr/local/sbin/apk\", \"/usr/bin/dnf5\",\n  \"/usr/bin/apt\", \"/usr/bin/puppet\", \"/bin/puppet\", \"/opt/puppetlabs/puppet/bin/puppet\", \"/usr/bin/pacman\",\n  \"/usr/bin/chef-client\", \"/bin/chef-client\", \"/usr/bin/pamac-daemon\", \"/bin/pamac-daemon\", \"/usr/local/bin/dockerd\",\n  \"/usr/bin/crio\", \"/usr/bin/podman\", \"/usr/bin/tdnf\", \"/usr/bin/apk\"\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0462",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and\nprocess.name in (\"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\") and\nprocess.command_line like (\n  \"*echo*\u003e /etc/passwd*\", \"*echo*\u003e/etc/passwd*\",\n  \"*echo*\u003e /etc/shadow*\", \"*echo*\u003e/etc/shadow*\"\n) and\nnot (\n  process.parent.command_line == \"runc init\" or\n  process.parent.executable in (\"/usr/bin/make\", \"/bin/make\")\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0468",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and\n  event.action in (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\", \"executed\", \"process_started\") and\n  process.name in (\"chown\", \"chmod\") and process.args == \"-R\" and process.args : \"--reference=*\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0474",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and\nprocess.entry_leader.entry_meta.type == \"container\" and process.name == \"debugfs\" and\nprocess.command_line like~ \"/dev/sd*\" and not process.args == \"-R\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0480",
+    "query": "sequence by host.id, process.entry_leader.entity_id with maxspan=30s\n  [process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and process.name == \"gdb\" and\n   (process.thread.capabilities.effective : \"CAP_SYS_PTRACE\" or process.thread.capabilities.permitted : \"CAP_SYS_PTRACE\") and\n   user.id != \"0\"]\n  [network where host.os.type == \"linux\" and event.action == \"connection_attempted\" and event.type == \"start\" and\n   process.name != null and user.id == \"0\"]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0486",
+    "query": "sequence by process.parent.entity_id, host.id with maxspan=60s\n  [process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and\n    process.name == \"unshare\" and process.args : (\"-r\", \"-rm\", \"-m\", \"-U\", \"--user\") and user.id != \"0\"]\n  [process where host.os.type == \"linux\" and event.action == \"uid_change\" and event.type == \"change\" and\n    user.id == \"0\"]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0492",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and (\n  (process.user.id == \"0\" and process.real_user.id != \"0\" and process.parent.user.id != \"0\") or\n  (process.group.id == \"0\" and process.real_group.id != \"0\" and process.parent.group.id != \"0\")\n) and\n(\n  startsWith(process.executable, process.command_line) or\n  startsWith(process.name, process.command_line)\n) and\n(\n  process.parent.name like (\".*\", \"python*\", \"perl*\", \"ruby*\", \"lua*\", \"php*\", \"node\", \"deno\", \"bun\", \"java\") or\n  process.parent.executable like (\"./*\", \"/tmp/*\", \"/var/tmp/*\", \"/dev/shm/*\", \"/run/user/*\", \"/var/run/user/*\", \"/home/*/*\") or\n  (\n    process.parent.name in (\"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\", \"mksh\") and\n    process.parent.args in (\"-c\", \"-cl\", \"-lc\", \"--command\", \"-ic\", \"-ci\", \"-bash\", \"-sh\", \"-zsh\", \"-dash\", \"-fish\", \"-ksh\", \"-mksh\") and\n    process.parent.args_count \u003c= 4\n  )\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0498",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and\n  event.action in (\"exec\", \"exec_event\", \"start\", \"ProcessRollup2\", \"executed\", \"process_started\") and\n  process.name == \"sudo\" and process.args == \"-u#-1\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0504",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action == \"exec\" and (\n  (process.user.id == \"0\" and process.real_user.id != \"0\" and process.parent.user.id != \"0\") or\n  (process.group.id == \"0\" and process.real_group.id != \"0\" and process.parent.group.id != \"0\")\n) and\n(\n  (process.name in (\"su\", \"passwd\", \"unix_chkpwd\") and process.args_count \u003c= 2) or\n  (\n    process.name in (\"sudo\", \"pkexec\", \"fusermount\", \"fusermount3\", \"mount\", \"umount\", \"newgrp\", \"chsh\") and\n    process.args_count == 1\n  ) or\n  process.name in (\n    \"sudoedit\", \"gpasswd\", \"chfn\", \"polkit-agent-helper-1\", \"dbus-daemon-launch-helper\", \"ssh-keysign\",\n    \"pam_extrausers_chkpwd\", \"expiry\", \"chage\", \"crontab\", \"wall\", \"bsd-write\", \"ssh-agent\", \"ping\",\n    \"ping6\", \"traceroute\", \"mtr\", \"ntfs-3g\", \"Xorg.wrap\", \"chrome-sandbox\", \"bwrap\"\n  )\n) and\n(\n  process.parent.name like (\".*\", \"python*\", \"perl*\", \"ruby*\", \"lua*\", \"php*\", \"node\", \"deno\", \"bun\", \"java\") or\n  process.parent.executable like (\"./*\", \"/tmp/*\", \"/var/tmp/*\", \"/dev/shm/*\", \"/run/user/*\", \"/var/run/user/*\", \"/home/*/*\") or\n  (\n    process.parent.name in (\"bash\", \"dash\", \"sh\", \"tcsh\", \"csh\", \"zsh\", \"ksh\", \"fish\", \"mksh\") and\n    process.parent.args in (\"-c\", \"-cl\", \"-lc\", \"--command\", \"-ic\", \"-ci\", \"-bash\", \"-sh\", \"-zsh\", \"-dash\", \"-fish\", \"-ksh\", \"-mksh\") and\n    process.parent.args_count \u003c= 4\n  )\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0510",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action in (\"exec\", \"ProcessRollup2\") and\n(\n  (process.name == \"docker\" and process.args : \"run\" and process.args : \"-it\"  and\n   process.args : (\"unix://*/docker.sock\", \"unix://*/dockershim.sock\")) or\n  (process.name == \"socat\" and process.args : (\"UNIX-CONNECT:*/docker.sock\", \"UNIX-CONNECT:*/dockershim.sock\"))\n) and not user.Ext.real.id : \"0\" and not group.Ext.real.id : \"0\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0516",
+    "query": "sequence by process.entity_id with maxspan=1m\n  [process where host.os.type == \"macos\" and event.type == \"start\" and event.action == \"exec\" and\n    (process.name == \"node\" or process.name like (\"python*\", \"ruby*\", \"perl*\"))]\n  [network where host.os.type == \"macos\" and event.type == \"start\" and destination.domain like \"*.oast*\"]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0522",
+    "query": "sequence by process.entity_id with maxspan=1m\n  [process where host.os.type == \"macos\" and event.type == \"start\" and event.action == \"exec\" and \n    (process.code_signature.trusted == false or process.code_signature.exists == false) and\n    process.args_count == 1 and\n    not process.executable like \"/opt/homebrew/*\"]\n  [network where host.os.type == \"macos\" and event.type == \"start\" and \n    destination.domain == null and \n    not destination.port in (443, 80, 53, 22, 25, 587, 993, 465, 8080, 8200, 9200) and \n    destination.port \u003c 49152 and\n    not cidrmatch(destination.ip, \"0.0.0.0\", \"240.0.0.0/4\", \"233.252.0.0/24\", \"224.0.0.0/4\", \n                  \"198.19.0.0/16\", \"192.18.0.0/15\", \"192.0.0.0/24\", \"10.0.0.0/8\", \"127.0.0.0/8\", \n                  \"169.254.0.0/16\", \"172.16.0.0/12\", \"192.0.2.0/24\", \"192.31.196.0/24\", \n                  \"192.52.193.0/24\", \"192.168.0.0/16\", \"192.88.99.0/24\", \"100.64.0.0/10\", \n                  \"192.175.48.0/24\", \"198.18.0.0/15\", \"198.51.100.0/24\", \"203.0.113.0/24\",\n                  \"::1\", \"FE80::/10\", \"FF00::/8\")]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0528",
+    "query": "process where host.os.type == \"macos\" and event.action == \"exec\" and\n process.name == \"security\" and\n process.args like (\"-wa\", \"-ga\") and process.args like~ (\"find-generic-password\", \"find-internet-password\") and\n process.command_line : (\"*Chrome*\", \"*Chromium*\", \"*Opera*\", \"*Safari*\", \"*Brave*\", \"*Microsoft Edge*\", \"*Firefox*\") and\n not process.parent.executable like \"/Applications/Keeper Password Manager.app/Contents/Frameworks/Keeper Password Manager Helper*/Contents/MacOS/Keeper Password Manager Helper*\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0534",
+    "query": "file where event.action == \"extended_attributes_delete\" and host.os.type == \"macos\" and process.executable != null and\n (process.code_signature.trusted == false or process.code_signature.exists == false) and \n not process.executable like (\"/usr/bin/xattr\",\n                              \"/System/*\",\n                              \"/private/tmp/KSInstallAction.*/*/Install Google Software Update.app/Contents/Helpers/ksinstall\",\n                              \"/Applications/CEWE Fotoschau.app/Contents/MacOS/FotoPlus\",\n                              \"/Applications/.com.bomgar.scc.*/Remote Support Customer Client.app/Contents/MacOS/sdcust\") and \n not file.path like \"/private/var/folders/*\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0540",
+    "query": "process where host.os.type == \"macos\" and event.type in (\"start\", \"process_started\") and process.name like~ \"sqlite*\" and\n process.args like \"/*/Application Support/com.apple.TCC/TCC.db\" and\n (process.parent.name like~ (\"osascript\", \"bash\", \"sh\", \"zsh\", \"Terminal\", \"Python*\") or (process.parent.code_signature.exists == false or process.parent.code_signature.trusted == false))",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0546",
+    "query": "network where host.os.type == \"macos\" and event.action == \"lookup_result\" and \n  (process.code_signature.trusted == false or process.code_signature.exists == false) and\n  dns.question.name like~ (\"*ip-api.com*\", \"*ipwho.is*\", \"*checkip.dyndns.org*\", \"*api.ipify.org*\",\n                           \"*api.npoint.io*\", \"*whatismyip.akamai.com*\", \"*bot.whatismyipaddress.com*\",\n                           \"*ifcfg.me*\", \"*ifconfig.me*\", \"*ident.me*\", \"*ipof.in*\", \"*ip.tyk.nu*\",\n                           \"*ipwhois.app*\", \"*freeipapi.com*\", \"*icanhazip.com*\", \"*curlmyip.com*\",\n                           \"*wgetip.com*\", \"*eth0.me*\", \"*ipecho.net*\", \"*ip.appspot.com*\",\n                           \"*api.myip.com*\", \"*geoiptool.com*\", \"*api.2ip.ua*\", \"*api.ip.sb*\",\n                           \"*ipinfo.io*\", \"*checkip.amazonaws.com*\", \"*wtfismyip.com*\", \"*iplogger.*\",\n                           \"*freegeoip.net*\", \"*freegeoip.app*\", \"*myip.ipip.net*\", \"*geoplugin.net*\",\n                           \"*myip.dnsomatic.com*\", \"*www.geoplugin.net*\", \"*api64.ipify.org*\",\n                           \"*ip4.seeip.org*\", \"*.geojs.io*\", \"*portmap.io*\", \"*api.db-ip.com*\",\n                           \"*geolocation-db.com*\", \"*inet-ip.info*\", \"*httpbin.org*\", \"*myip.opendns.com*\") and\n  not process.executable like \"/Users/*/Library/Developer/CoreSimulator/*\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0552",
+    "query": "process where host.os.type == \"macos\" and event.type in (\"start\", \"process_started\") and \n process.args == \"-e\" and process.args : \"const*require*child_process*\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0558",
+    "query": "library where host.os.type == \"macos\" and event.action == \"load\" and\n  dll.path like \"/Users/*\" and\n  process.name like \"python*\" and\n  not dll.name like (\"*.so\", \"*.dylib\", \"Python\", \"*.*_extension\", \"*.dylib.*\") and\n  not dll.path like (\"*/site-packages/*/Qt*/lib/Qt*.framework/Versions/*/Qt*\",\n                     \"/Users/*/.pyenv/versions/*/lib/python*/site-packages/*\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0564",
+    "query": "process where host.os.type == \"macos\" and event.type in (\"start\", \"process_started\") and\n  (\n    (process.name == \"networksetup\" and process.args like~ \"-connectpppoeservice\") or\n    (process.name == \"scutil\" and process.args like~ \"--nc\" and process.args like~ \"start\") or\n    (process.name == \"osascript\" and process.command_line : \"osascript*set VPN to service*\")\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0570",
+    "query": "file where host.os.type == \"macos\" and event.type != \"deletion\" and process.name != null and\n  file.path like \"/private/var/at/tabs/*\" and not process.executable == \"/usr/bin/crontab\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0576",
+    "query": "process where host.os.type == \"macos\" and event.type in (\"start\", \"process_started\") and\n process.parent.name == \"emond\" and\n process.name like~ (\n   \"bash\",\n   \"dash\",\n   \"sh\",\n   \"tcsh\",\n   \"csh\",\n   \"zsh\",\n   \"ksh\",\n   \"fish\",\n   \"Python\",\n   \"python*\",\n   \"perl*\",\n   \"php*\",\n   \"osascript\",\n   \"pwsh\",\n   \"curl\",\n   \"wget\",\n   \"cp\",\n   \"mv\",\n   \"touch\",\n   \"echo\",\n   \"base64\",\n   \"launchctl\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0582",
+    "query": "process where host.os.type == \"macos\" and event.type == \"start\" and\n process.name == \"defaults\" and process.args == \"write\" and process.args : (\"LoginHook\", \"LogoutHook\") and\n not process.args :\n       (\n         \"Support/JAMF/ManagementFrameworkScripts/logouthook.sh\",\n         \"Support/JAMF/ManagementFrameworkScripts/loginhook.sh\",\n         \"/Library/Application Support/JAMF/ManagementFrameworkScripts/logouthook.sh\",\n         \"/Library/Application Support/JAMF/ManagementFrameworkScripts/loginhook.sh\"\n       )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0588",
+    "query": "file where host.os.type == \"macos\" and event.type != \"deletion\" and \n  file.name == \"StartupParameters.plist\" and \n  file.path like (\"/System/Library/StartupItems/*/StartupParameters.plist\", \n  \"/Library/StartupItems/*/StartupParameters.plist\") and\n  not (process.code_signature.signing_id == \"com.apple.shove\" and process.code_signature.trusted == true)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0594",
+    "query": "process where host.os.type == \"macos\" and event.type in (\"start\", \"process_started\") and\n process.name == \"security_authtrampoline\" and\n process.parent.name like~ (\"osascript\", \"com.apple.automator.runner\", \"sh\", \"bash\", \"dash\", \"zsh\", \"python*\", \"perl*\", \"php*\", \"ruby\", \"pwsh\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0600",
+    "query": "network where event.module == \"network_traffic\" and destination.ip == \"169.254.169.254\" and destination.port == 80 and\nhttp.request.method == \"GET\" and url.path : (\n  \"/latest/meta-data/iam/security-credentials/*\",\n  \"*computeMetadata/v1/instance/service-accounts/*/oauth2/access_token*\",\n  \"*metadata/identity/oauth2/token*\"\n) and (\n  ?process.name : (\n    \"curl\", \"wget\", \"python*\", \"node\", \"bun\", \"php*\", \"ruby\", \"perl\", \"bash\", \"dash\", \"sh\", \"tcsh\", \"tclsh\", \"wish\",\n    \"csh\", \"zsh\", \"ksh\", \"fish\", \"mksh\", \"busybox\",\n    \"bun.exe\", \"node.exe\", \"powershell.exe\", \"cmd.exe\", \"curl.exe\", \"wget.exe\", \"rundll32.exe\", \"w3wp.exe\", \"java*\", \n    \"go\", \"nc\", \"netcat\", \"nginx\", \"apache*\", \"httpd\", \"tomcat*\", \"catalina\", \"spring*\", \"dotnet\", \"gunicorn\", \"uwsgi\", \n    \".*\", \"osascript\"\n  ) or ?process.executable : (\n    \"/tmp/*\", \"/var/tmp/*\", \"/dev/shm/*\", \"/home/*/*\", \"/var/run/*\", \"/run/*\", \"/boot/*\", \"/.*\", \"C:\\\\Users\\\\*\", \"?:\\\\ProgramData\\\\*\"\n  ) or user_agent.original : (\n    \"curl*\", \"wget*\", \"python*\", \"ruby*\", \"Go-http-client*\", \"node*\", \"axios*\", \"undici*\", \"java*\", \"php*\", \"Bun*\",\n    \"Apache-HttpClient*\", \"okhttp*\", \"RestTemplate*\", \"*WindowsPowerShell*\", \"*roadtools*\", \"*fasthttp*\", \"*azurehound*\", \"*bloodhound*\", \"*aiohttp*\"\n  )\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0606",
+    "query": "network where data_stream.dataset == \"network_traffic.redis\" and\n  network_traffic.redis.query like~ \"*CONFIG SET dir*\" and\n  (\n    network_traffic.redis.query like~ \"*/etc/cron*\" or\n    network_traffic.redis.query like~ \"*/var/spool/cron*\"\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0612",
+    "query": "network where host.os.type == \"windows\" and\n    dns.question.name != null and process.name != null and\n    not (?user.id in (\"S-1-5-18\", \"S-1-5-19\", \"S-1-5-20\") or user.domain == \"NT AUTHORITY\") and\n    /* Add new WebSvc domains here */\n    dns.question.name :\n       (\n        \"raw.githubusercontent.*\",\n        \"pastebin.*\",\n        \"paste4btc.com\",\n        \"paste.ee\",\n        \"ghostbin.com\",\n        \"drive.google.com\",\n        \"?.docs.live.net\",\n        \"api.dropboxapi.*\",\n        \"content.dropboxapi.*\",\n        \"dl.dropboxusercontent.*\",\n        \"api.onedrive.com\",\n        \"*.onedrive.org\",\n        \"onedrive.live.com\",\n        \"filebin.net\",\n        \"*.ngrok.io\",\n        \"ngrok.com\",\n        \"*.portmap.*\",\n        \"*serveo.net\",\n        \"*localtunnel.me\",\n        \"*pagekite.me\",\n        \"*localxpose.io\",\n        \"*notabug.org\",\n        \"rawcdn.githack.*\",\n        \"paste.nrecom.net\",\n        \"zerobin.net\",\n        \"controlc.com\",\n        \"requestbin.net\",\n        \"slack.com\",\n        \"api.slack.com\",\n        \"slack-redir.net\",\n        \"slack-files.com\",\n        \"cdn.discordapp.com\",\n        \"discordapp.com\",\n        \"discord.com\",\n        \"apis.azureedge.net\",\n        \"cdn.sql.gg\",\n        \"?.top4top.io\",\n        \"top4top.io\",\n        \"www.uplooder.net\",\n        \"*.cdnmegafiles.com\",\n        \"transfer.sh\",\n        \"gofile.io\",\n        \"updates.peer2profit.com\",\n        \"api.telegram.org\",\n        \"t.me\",\n        \"meacz.gq\",\n        \"rwrd.org\",\n        \"*.publicvm.com\",\n        \"*.blogspot.com\",\n        \"api.mylnikov.org\",\n        \"file.io\",\n        \"stackoverflow.com\",\n        \"*files.1drv.com\",\n        \"api.anonfile.com\",\n        \"*hosting-profi.de\",\n        \"ipbase.com\",\n        \"ipfs.io\",\n        \"*up.freeo*.space\",\n        \"api.mylnikov.org\",\n        \"script.google.com\",\n        \"script.googleusercontent.com\",\n        \"api.notion.com\",\n        \"graph.microsoft.com\",\n        \"*.sharepoint.com\",\n        \"mbasic.facebook.com\",\n        \"login.live.com\",\n        \"api.gofile.io\",\n        \"api.anonfiles.com\",\n        \"api.notion.com\",\n        \"api.trello.com\",\n        \"gist.githubusercontent.com\",\n        \"files.pythonhosted.org\",\n        \"g.live.com\",\n        \"*.zulipchat.com\",\n        \"webhook.site\",\n        \"run.mocky.io\",\n        \"mockbin.org\",\n        \"*googleapis.com\",\n        \"global.rel.tunnels.api.visualstudio.com\",\n        \"*.devtunnels.ms\",\n        \"api.github.com\",\n        \"*.blob.core.windows.net\",\n        \"*.blob.storage.azure.net\",\n        \"files.catbox.moe\",\n        \"*.supabase.co\",\n        \"*.elastic-cloud.com\",\n        \"*.cloud.es.io\",\n        \"*icp0.io\") and\n\n    /* Insert noisy false positives here */\n    not (\n      (\n        process.executable : (\n          \"?:\\\\Program Files\\\\*.exe\",\n          \"?:\\\\Program Files (x86)\\\\*.exe\",\n          \"?:\\\\ProgramData\\\\Microsoft\\\\Windows Defender\\\\Platform\\\\*\\\\MsMpEng.exe\",\n          \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\BraveSoftware\\\\*\\\\Application\\\\brave.exe\",\n          \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe\",\n          \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Microsoft\\\\OneDrive\\\\OneDrive.exe\",\n          \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Programs\\\\Opera*\\\\opera.exe\",\n          \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Programs\\\\Fiddler\\\\Fiddler.exe\",\n          \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\PowerToys\\\\PowerToys.exe\",\n          \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Vivaldi\\\\Application\\\\vivaldi.exe\",\n          \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Zen Browser\\\\zen.exe\",\n          \"?:\\\\Users\\\\*\\\\Wavesor Software\\\\WaveBrowser\\\\wavebrowser.exe\",\n          \"?:\\\\Windows\\\\System32\\\\MicrosoftEdgeCP.exe\",\n          \"?:\\\\Windows\\\\system32\\\\mobsync.exe\",\n          \"?:\\\\Windows\\\\SysWOW64\\\\mobsync.exe\",\n          \"?:\\\\Windows\\\\system32\\\\svchost.exe\",\n          \"?:\\\\Windows\\\\System32\\\\smartscreen.exe\",\n          \"?:\\\\Windows\\\\System32\\\\wsl.exe\",\n          \"?:\\\\Windows\\\\System32\\\\WWAHost.exe\"\n        )\n      ) or\n\n      /* Discord App */\n      (process.name : \"Discord.exe\" and (process.code_signature.subject_name : \"Discord Inc.\" and\n       process.code_signature.trusted == true) and dns.question.name : (\"discord.com\", \"cdn.discordapp.com\", \"discordapp.com\")\n      ) or\n\n      /* MS Sharepoint / OneDrive */\n      (process.name : (\"Microsoft.SharePoint.exe\", \"OneDrive.Sync.Service.exe\") and dns.question.name : \"onedrive.live.com\" and\n       (process.code_signature.subject_name : \"Microsoft Corporation\" and process.code_signature.trusted == true)\n      ) or\n\n      /* Obsidian - Plugins are stored on raw.githubusercontent.com */\n      (process.name : \"Obsidian.exe\" and (process.code_signature.subject_name : \"Dynalist Inc\" and\n       process.code_signature.trusted == true) and dns.question.name : \"raw.githubusercontent.com\"\n      ) or\n\n      /* WebExperienceHostApp */\n      (process.name : \"WebExperienceHostApp.exe\" and (process.code_signature.subject_name : \"Microsoft Windows\" and\n       process.code_signature.trusted == true) and dns.question.name : (\"onedrive.live.com\", \"skyapi.onedrive.live.com\")\n      ) or\n\n      /* IntelliJ IDEA connecting to raw.githubusercontent.com */\n      (process.code_signature.subject_name : \"JetBrains s.r.o.\" and\n       process.code_signature.trusted == true and dns.question.name : (\"api.github.com\", \"raw.githubusercontent.com\")\n      ) or\n\n      (process.code_signature.subject_name : \"Microsoft *\" and process.code_signature.trusted == true and\n       dns.question.name : (\"*.sharepoint.com\", \"graph.microsoft.com\", \"g.live.com\", \"login.live.com\",\n                            \"*.blob.core.windows.net\", \"*.blob.storage.azure.net\")\n      ) or\n\n      (process.code_signature.subject_name : (\"Python Software Foundation\", \"Anaconda, Inc.\") and\n       process.code_signature.trusted == true and dns.question.name : \"files.pythonhosted.org\"\n      ) or\n\n      /* Zoom */\n      (process.name : \"Zoom.exe\" and (\n       process.code_signature.subject_name : (\"Zoom Video Communications, Inc.\", \"Zoom Communications, Inc.\") and\n       process.code_signature.trusted == true) and dns.question.name : (\"www.googleapis.com\", \"graph.microsoft.com\")\n      ) or\n\n      /* VSCode */\n      (process.name : \"Code.exe\" and (process.code_signature.subject_name : \"Microsoft Corporation\" and\n       process.code_signature.trusted == true) and dns.question.name : (\"api.github.com\", \"raw.githubusercontent.com\")\n      ) or\n\n      /* Terraform */\n      (process.name : \"terraform-provider*.exe\" and (process.code_signature.subject_name : \"HashiCorp, Inc.\" and\n       process.code_signature.trusted == true) and dns.question.name : \"graph.microsoft.com\"\n      ) or\n\n      (\n        process.code_signature.trusted == true and\n        process.code_signature.subject_name : (\n                              \"Johannes Schindelin\",\n                              \"Redis Inc.\",\n                              \"Slack Technologies, LLC\",\n                              \"Cisco Systems, Inc.\",\n                              \"Dropbox, Inc\",\n                              \"Amazon.com Services LLC\",\n                              \"Island Technology Inc.\",\n                              \"GitHub, Inc.\",\n                              \"Red Hat, Inc\",\n                              \"Mozilla Corporation\",\n                              \"Spotify AB\",\n                              \"DeepL SE\"\n        )\n      )\n    )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0618",
+    "query": "file where host.os.type == \"windows\" and event.action == \"rename\" and\n  process.name : \"svchost.exe\" and file.Ext.original.name : \"BIT*.tmp\" and \n  (file.extension : (\"exe\", \"zip\", \"rar\", \"bat\", \"dll\", \"ps1\", \"vbs\", \"vbe\", \"wsh\", \"wsf\", \"sct\", \"js\", \"jse\", \"hta\", \"pif\", \"scr\", \"cmd\", \"cpl\") or\n   file.Ext.header_bytes : \"4d5a*\") and \n \n  /* noisy paths, for hunting purposes you can use the same query without the following exclusions */\n  not file.path : (\"?:\\\\Program Files\\\\*\", \"?:\\\\Program Files (x86)\\\\*\", \"?:\\\\Windows\\\\*\", \"?:\\\\ProgramData\\\\*\\\\*\") and \n \n  /* lot of third party SW use BITS to download executables with a long file name */\n  not length(file.name) \u003e 30 and\n  not file.path : (\n        \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Temp*\\\\wct*.tmp\",\n        \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Adobe\\\\ARM\\\\*\\\\RdrServicesUpdater*.exe\",\n        \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Adobe\\\\ARM\\\\*\\\\AcroServicesUpdater*.exe\",\n        \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Docker Desktop Installer\\\\update-*.exe\"\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0624",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  (process.name : \"desktopimgdownldr.exe\" or ?process.pe.original_file_name == \"desktopimgdownldr.exe\") and\n  process.args : \"/lockscreenurl:http*\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0630",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  process.parent.name :\n                (\"ScreenConnect.ClientService.exe\",\n                 \"ScreenConnect.WindowsClient.exe\",\n                 \"ScreenConnect.WindowsBackstageShell.exe\",\n                 \"ScreenConnect.WindowsFileManager.exe\") and\n  (\n   (process.name : \"powershell.exe\" and\n    process.args : (\"-enc\", \"-ec\", \"-e\", \"*downloadstring*\", \"*Reflection.Assembly*\", \"*http*\")) or\n   (process.name : \"cmd.exe\" and process.args : \"/c\") or\n   (process.name : \"net.exe\" and process.args : \"/add\") or\n   (process.name : \"schtasks.exe\" and process.args : (\"/create\", \"-create\")) or\n   (process.name : \"sc.exe\" and process.args : \"create\") or\n   (process.name : \"rundll32.exe\" and not process.args : \"url.dll,FileProtocolHandler\") or\n   (process.name : \"msiexec.exe\" and process.args : (\"/i\", \"-i\") and\n    process.args : (\"/q\", \"/quiet\", \"/qn\", \"-q\", \"-quiet\", \"-qn\", \"-Q+\")) or\n   process.name : (\"mshta.exe\", \"certutil.exe\", \"bitsadmin.exe\", \"certreq.exe\", \"wscript.exe\", \"cscript.exe\", \"curl.exe\",\n                   \"ssh.exe\", \"scp.exe\", \"wevtutil.exe\", \"wget.exe\", \"wmic.exe\")\n   )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0636",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  ( \n    (process.args : \"reverse\" and process.args : (\"-c\", \"-s\")) or \n    (process.args : (\"proxy\", \"fwd\") and process.args : \"-l\") \n   ) and \n  (?process.code_signature.exists == false or process.name : \"rundll32.exe\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0642",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n(\n  (\n    (?process.pe.original_file_name : \"procdump\" or process.name : \"procdump.exe\") and process.args : \"-ma\"\n  ) or\n  (\n    process.name : \"ProcessDump.exe\" and not process.parent.executable regex~ \"\"\"C:\\\\Program Files( \\(x86\\))?\\\\Cisco Systems\\\\.*\"\"\"\n  ) or\n  (\n    (?process.pe.original_file_name : \"WriteMiniDump.exe\" or process.name : \"WriteMiniDump.exe\") and\n      not process.parent.executable regex~ \"\"\"C:\\\\Program Files( \\(x86\\))?\\\\Steam\\\\.*\"\"\"\n  ) or\n  (\n    (?process.pe.original_file_name : \"RUNDLL32.EXE\" or process.name : \"RUNDLL32.exe\") and\n      (process.args : \"*MiniDump*\" or process.command_line : \"*comsvcs*#*24*\")\n  ) or\n  (\n    (?process.pe.original_file_name : \"RdrLeakDiag.exe\" or process.name : \"RdrLeakDiag.exe\") and\n      process.args : \"/fullmemdmp\"\n  ) or\n  (\n    (?process.pe.original_file_name : \"SqlDumper.exe\" or process.name : \"SqlDumper.exe\") and\n      process.args : \"0x01100*\") or\n  (\n    (?process.pe.original_file_name : \"TTTracer.exe\" or process.name : \"TTTracer.exe\") and\n      process.args : \"-dumpFull\" and process.args : \"-attach\") or\n  (\n    (?process.pe.original_file_name : \"ntdsutil.exe\" or process.name : \"ntdsutil.exe\") and\n      process.args : \"cr*fu*\") or\n  (\n    (?process.pe.original_file_name : \"diskshadow.exe\" or process.name : \"diskshadow.exe\") and process.args : \"/s\")\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0648",
+    "query": "sequence by winlog.computer_name, source.ip with maxspan=5s\n\n/* Filter for an event that indicates coercion against known abused named pipes using an account that is not the host */\n[file where host.os.type == \"windows\" and event.code : \"5145\" and \n    not startswith~(winlog.computer_name, substring(user.name, 0, -1)) and\n    file.name : (\n        \"Spoolss\", \"netdfs\", \"lsarpc\", \"lsass\", \"netlogon\", \"samr\", \"efsrpc\", \"FssagentRpc\",\n        \"eventlog\", \"winreg\", \"srvsvc\", \"dnsserver\", \"dhcpserver\", \"WinsPipe\"\n    )]\n\n/* Detects a logon attempt using the Kerberos protocol resulting from the coercion coming from the same IP address */\n[authentication where host.os.type == \"windows\" and event.code in (\"4624\", \"4625\") and\n    endswith~(user.name, \"$\") and winlog.logon.type : \"network\" and\n    winlog.event_data.AuthenticationPackageName : \"Kerberos\" and\n\n    /* Filter for a machine account that matches the hostname */\n    startswith~(winlog.computer_name, substring(user.name, 0, -1)) and\n\n    /* Verify if the Source IP belongs to the host */\n    not endswith(string(source.ip), string(host.ip)) and\n    source.ip != null and source.ip != \"::1\" and source.ip != \"127.0.0.1\"]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0654",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  (process.name : \"aspnet_regiis.exe\" or ?process.pe.original_file_name == \"aspnet_regiis.exe\") and\n  process.args : \"connectionStrings\" and process.args : (\"-pdf\", \"-pd\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0660",
+    "query": "process where host.os.type == \"windows\" and event.code == \"10\" and\n  winlog.event_data.TargetImage : \"?:\\\\WINDOWS\\\\system32\\\\lsass.exe\" and\n\n   /* seclogon service accessing lsass */\n  winlog.event_data.CallTrace : \"*seclogon.dll*\" and process.name : \"svchost.exe\" and\n\n   /* PROCESS_CREATE_PROCESS \u0026 PROCESS_DUP_HANDLE \u0026 PROCESS_QUERY_INFORMATION \u0026 PROCESS_QUERY_LIMITED_INFORMATION */\n  winlog.event_data.GrantedAccess == \"0x14c0\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0666",
+    "query": "file where host.os.type == \"windows\" and event.type == \"creation\" and\n /* regf file header */\n file.Ext.header_bytes : \"72656766*\" and file.size \u003e= 30000 and\n process.pid == 4 and user.id : (\"S-1-5-21*\", \"S-1-12-1-*\") and\n not file.path : (\n    \"?:\\\\*\\\\UPM_Profile\\\\NTUSER.DAT\",\n    \"?:\\\\*\\\\UPM_Profile\\\\NTUSER.DAT.LASTGOODLOAD\",\n    \"?:\\\\*\\\\UPM_Profile\\\\AppData\\\\Local\\\\Microsoft\\\\Windows\\\\UsrClass.dat*\",\n    \"?:\\\\Windows\\\\Netwrix\\\\Temp\\\\????????.???.offreg\",\n    \"?:\\\\*\\\\AppData\\\\Local\\\\Packages\\\\Microsoft.*\\\\Settings\\\\settings.dat*\"\n )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0672",
+    "query": "sequence by winlog.computer_name, winlog.process.pid with maxspan=1s\n\n /* 2 consecutive vault reads from same pid for web creds */\n\n [any where host.os.type == \"windows\" and event.code == \"5382\" and\n  (winlog.event_data.SchemaFriendlyName : \"Windows Web Password Credential\" and winlog.event_data.Resource : \"http*\") and\n  not winlog.event_data.SubjectLogonId : \"0x3e7\" and\n  not winlog.event_data.Resource : \"http://localhost/\"]\n\n [any where host.os.type == \"windows\" and event.code == \"5382\" and\n  (winlog.event_data.SchemaFriendlyName : \"Windows Web Password Credential\" and winlog.event_data.Resource : \"http*\") and\n  not winlog.event_data.SubjectLogonId : \"0x3e7\" and\n  not winlog.event_data.Resource : \"http://localhost/\"]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0678",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n (\n    (?process.pe.original_file_name in (\"Cmd.Exe\",\"PowerShell.EXE\")) or\n    (process.name : (\"cmd.exe\", \"powershell.exe\"))\n ) and\n\n /* Create Symbolic Link to Shadow Copies */\n process.args : (\"*mklink*\", \"*SymbolicLink*\") and process.command_line : (\"*HarddiskVolumeShadowCopy*\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0684",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  (process.name : \"attrib.exe\" or ?process.pe.original_file_name == \"ATTRIB.EXE\") and process.args : \"+h\" and\n  not (process.parent.name: \"cmd.exe\" and process.command_line: \"attrib  +R +H +S +A *.cui\") and\n\n  not (\n    process.parent.name: \"draw.io.exe\" and\n    (\n      process.command_line : (\"*drawio.bkp*\", \"*drawio.dtmp*\")\n    )\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0690",
+    "query": "registry where host.os.type == \"windows\" and event.type == \"change\" and\n  registry.value: \"BehaviorOnFailedVerify\" and registry.data.strings : (\"0\", \"0x00000000\", \"1\", \"0x00000001\") and \n  not process.executable : \n                      (\"?:\\\\Windows\\\\System32\\\\svchost.exe\", \n                       \"?:\\\\Windows\\\\CCM\\\\CcmExec.exe\",\n                       \"\\\\Device\\\\HarddiskVolume*\\\\Windows\\\\system32\\\\svchost.exe\", \n                       \"\\\\Device\\\\HarddiskVolume*\\\\Windows\\\\CCM\\\\CcmExec.exe\")\n  /*\n    Full registry key path omitted due to data source variations:\n    \"HKEY_USERS\\\\*\\\\Software\\\\Policies\\\\Microsoft\\\\Windows NT\\\\Driver Signing\\\\BehaviorOnFailedVerify\"\n  */",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0696",
+    "query": "registry where host.os.type == \"windows\" and event.action != \"deletion\" and registry.value : \"UserAuthentication\" and\n  registry.path : (\n    \"HKLM\\\\SYSTEM\\\\ControlSet*\\\\Control\\\\Terminal Server\\\\WinStations\\\\RDP-Tcp\\\\UserAuthentication\",\n    \"\\\\REGISTRY\\\\MACHINE\\\\SYSTEM\\\\*ControlSet*\\\\Control\\\\Terminal Server\\\\WinStations\\\\RDP-Tcp\\\\UserAuthentication\",\n    \"MACHINE\\\\SYSTEM\\\\*ControlSet*\\\\Control\\\\Terminal Server\\\\WinStations\\\\RDP-Tcp\\\\UserAuthentication\"\n  ) and registry.data.strings :  (\"0\", \"0x00000000\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0702",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  process.name : (\"csc.exe\", \"vbc.exe\") and\n  process.parent.name : (\"wscript.exe\", \"mshta.exe\", \"cscript.exe\", \"wmic.exe\", \"svchost.exe\", \"rundll32.exe\", \"cmstp.exe\", \"regsvr32.exe\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0708",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  process.name : \"MSBuild.exe\" and\n  process.parent.name : (\"explorer.exe\", \"wmiprvse.exe\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0714",
+    "query": "registry where host.os.type == \"windows\" and\n/* update here with encoding combinations */\n registry.data.strings : \"TVqQAAMAAAAEAAAA*\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0720",
+    "query": "/* the benefit of doing this as an eql sequence vs kql is this will limit to alerting only on the first network connection */\n\nsequence by process.entity_id\n  [process where host.os.type == \"windows\" and event.type == \"start\" and process.name : \"installutil.exe\"]\n  [network where host.os.type == \"windows\" and process.name : \"installutil.exe\" and network.direction : (\"outgoing\", \"egress\")]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0726",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  (\n   (process.pe.original_file_name : \"AutoIt*.exe\" and not process.name : \"AutoIt*.exe\") or\n   (process.pe.original_file_name == \"AutoHotkey.exe\" and not process.name : (\"AutoHotkey*.exe\", \"InternalAHK.exe\")) or\n   (process.pe.original_file_name == \"KIX32.EXE\" and not process.name : \"KIX*.exe\" and process.executable : (\"?:\\\\Users\\\\*.exe\", \"?:\\\\ProgramData\\\\*.exe\", \"\\\\Device\\\\HarddiskVolume*\\\\Users\\\\*.exe\", \"\\\\Device\\\\HarddiskVolume*\\\\ProgramData\\\\*.exe\"))\n   )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0732",
+    "query": "sequence by process.entity_id\n  [process where host.os.type == \"windows\" and (process.name : \"expand.exe\" or process.name : \"extrac32.exe\" or\n                 process.name : \"ieexec.exe\" or process.name : \"makecab.exe\") and\n                 event.type == \"start\"]\n  [network where host.os.type == \"windows\" and (process.name : \"expand.exe\" or process.name : \"extrac32.exe\" or\n                 process.name : \"ieexec.exe\" or process.name : \"makecab.exe\") and\n    not cidrmatch(destination.ip,\n      \"10.0.0.0/8\", \"127.0.0.0/8\", \"169.254.0.0/16\", \"172.16.0.0/12\", \"192.0.0.0/24\", \"192.0.0.0/29\", \"192.0.0.8/32\",\n      \"192.0.0.9/32\", \"192.0.0.10/32\", \"192.0.0.170/32\", \"192.0.0.171/32\", \"192.0.2.0/24\", \"192.31.196.0/24\",\n      \"192.52.193.0/24\", \"192.168.0.0/16\", \"192.88.99.0/24\", \"224.0.0.0/4\", \"100.64.0.0/10\", \"192.175.48.0/24\",\n      \"198.18.0.0/15\", \"198.51.100.0/24\", \"203.0.113.0/24\", \"240.0.0.0/4\", \"::1\", \"FE80::/10\", \"FF00::/8\")]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0738",
+    "query": "sequence by process.entity_id with maxspan=1m\n [process where host.os.type == \"windows\" and event.type : \"start\" and\n  process.parent.name : \"msiexec.exe\" and process.parent.args : \"/v\" and\n  not process.executable :\n        (\"?:\\\\Windows\\\\System32\\\\msiexec.exe\",\n         \"?:\\\\Windows\\\\sysWOW64\\\\msiexec.exe\",\n         \"?:\\\\Windows\\\\system32\\\\srtasks.exe\",\n         \"?:\\\\Windows\\\\syswow64\\\\srtasks.exe\",\n         \"?:\\\\Windows\\\\sys*\\\\taskkill.exe\",\n         \"?:\\\\Program Files\\\\*.exe\",\n         \"?:\\\\Program Files (x86)\\\\*.exe\",\n         \"?:\\\\Windows\\\\Installer\\\\MSI*.tmp\",\n         \"?:\\\\Windows\\\\Microsoft.NET\\\\Framework*\\\\RegSvcs.exe\",\n         \"C:\\\\Windows\\\\System32\\\\regsvr32.exe\",\n         \"C:\\\\Windows\\\\Sys?????\\\\certutil.exe\",\n         \"C:\\\\Windows\\\\System32\\\\WerFault.exe\",\n         \"C:\\\\Windows\\\\System32\\\\wevtutil.exe\",\n         \"C:\\\\Windows\\\\SysWOW64\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\") and\n not (process.name : (\"rundll32.exe\", \"regsvr32.exe\", \"powershell.exe\", \"regasm.exe\", \"wscript.exe\") and process.args : (\"?:\\\\Program Files\\\\*\", \"?:\\\\Program Files (x86)\\\\*\")) and\n not (?process.code_signature.subject_name : (\"Bruno Software Inc\", \"Proton AG\", \"Axis Communications AB\", \"Citrix Systems, Inc.\", \"NSUS Limited\", \"Action1 Corporation\", \"Solarwinds Worldwide, LLC\") and\n      ?process.code_signature.trusted == true) and\n not (?process.pe.original_file_name in (\"dxsetup.exe\", \"MofCompiler.exe\", \"ShellApp.exe\") and\n      ?process.code_signature.subject_name : \"Microsoft Corporation\" and ?process.code_signature.trusted == true) and\n not ?process.hash.sha256 in (\"cfaef8c711db04d6c4a4381c66ac21b9e234e57febedb77fedc9316898b214bc\",\n                              \"2f26f37cce780ca76f0dbac0de233f4c8d84c31b3f37380b9d5faacc3ee2d03e\",\n                              \"7d9c691bfbf3beb78919dfd940fa6d325c3437425d5b0371df39aef6accf858d\")\n ]\n[network where host.os.type == \"windows\" and process.name != null and\n not dns.question.name : (\"core.bdec.microsoft.com\", \"go.microsoft.com\", \"ocsp.digicert.com\", \"localhost\", \"www.google-analytics.com\",\n                          \"ocsp.verisign.com\", \"*.symcb.com\")]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0744",
+    "query": "/* This rule is compatible with Elastic Endpoint only */\n\nsequence by host.id, user.id with maxspan=3m\n\n [process where host.os.type == \"windows\" and event.type == \"start\" and\n  process.Ext.token.integrity_level_name != \"system\" and\n  (\n    process.pe.original_file_name : (\"winword.exe\", \"excel.exe\", \"outlook.exe\", \"powerpnt.exe\", \"eqnedt32.exe\",\n                                     \"fltldr.exe\", \"mspub.exe\", \"msaccess.exe\", \"powershell.exe\", \"pwsh.exe\",\n                                     \"cscript.exe\", \"wscript.exe\", \"rundll32.exe\", \"regsvr32.exe\", \"msbuild.exe\",\n                                     \"mshta.exe\", \"wmic.exe\", \"cmstp.exe\", \"msxsl.exe\") or\n\n    (process.executable : (\"?:\\\\Users\\\\*.exe\",\n                           \"?:\\\\ProgramData\\\\*.exe\",\n                           \"?:\\\\Windows\\\\Temp\\\\*.exe\",\n                           \"?:\\\\Windows\\\\Tasks\\\\*\") and\n      (process.code_signature.exists == false or process.code_signature.status : \"errorBadDigest\")) or\n\n    process.executable : \"?:\\\\Windows\\\\Microsoft.NET\\\\*.exe\"\n  ) and\n\n  not process.executable :\n             (\"?:\\\\Windows\\\\System32\\\\WerFaultSecure.exe\",\n              \"?:\\\\WINDOWS\\\\SysWOW64\\\\WerFaultSecure.exe\",\n              \"?:\\\\Windows\\\\System32\\\\WerFault.exe\",\n              \"?:\\\\Windows\\\\SysWOW64\\\\WerFault.exe\")\n  ] by process.pid\n [process where host.os.type == \"windows\" and event.type == \"start\" and\n  process.parent.Ext.real.pid \u003e 0 and\n\n  /* process.parent.Ext.real.pid is only populated if the parent process pid doesn't match */\n  not (process.name : \"msedge.exe\" and process.parent.name : \"sihost.exe\") and\n\n   not process.executable :\n             (\"?:\\\\Windows\\\\System32\\\\WerFaultSecure.exe\",\n              \"?:\\\\WINDOWS\\\\SysWOW64\\\\WerFaultSecure.exe\",\n              \"?:\\\\Windows\\\\System32\\\\WerFault.exe\",\n              \"?:\\\\Windows\\\\SysWOW64\\\\WerFault.exe\")\n ] by process.parent.Ext.real.pid",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0750",
+    "query": "any where host.os.type == \"windows\" and event.category in (\"file\", \"process\") and \n  (\n    (event.type == \"creation\" and file.path : \"*\\u{202E}*\") or \n    (event.type == \"start\" and process.name : \"*\\u{202E}*\")\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0756",
+    "query": "registry where host.os.type == \"windows\" and event.type == \"change\" and\n  registry.value : \"EnableAt\" and\n  registry.data.strings : (\"1\", \"0x00000001\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0762",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and process.executable : \"C:\\\\*\" and\n  (\n    process.working_directory : (\"D:\\\\*\", \"E:\\\\*\", \"F:\\\\*\") or\n    ?process.Ext.device.product_id : (\"Virtual DVD-ROM\", \"Virtual Disk\")\n  ) and\n  process.parent.name : \"explorer.exe\" and\n  process.name : (\n    \"rundll32.exe\", \"mshta.exe\", \"powershell.exe\", \"pwsh.exe\", \"cmd.exe\", \"regsvr32.exe\", \"cscript.exe\",\n    \"wscript.exe\", \"certutil.exe\", \"bitsadmin.exe\", \"msiexec.exe\", \"wmic.exe\", \"schtasks.exe\", \"msbuild.exe\"\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0768",
+    "query": "sequence by process.entity_id with maxspan = 2m\n[process where host.os.type == \"windows\" and event.type == \"start\" and\n   (process.name : \"WMIC.exe\" or process.pe.original_file_name : \"wmic.exe\") and\n   process.args : (\"format*:*\", \"/format*:*\", \"*-format*:*\") and\n   not process.command_line : (\"* /format:table *\", \"* /format:table\")]\n[any where host.os.type == \"windows\" and (event.category == \"library\" or (event.category == \"process\" and event.action : \"Image loaded*\")) and\n (?dll.name : (\"jscript.dll\", \"vbscript.dll\") or file.name : (\"jscript.dll\", \"vbscript.dll\"))]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0774",
+    "query": "file where host.os.type == \"windows\" and event.type == \"creation\" and\n   process.name : (\"cmd.exe\", \"powershell.exe\", \"pwsh.exe\", \"mshta.exe\", \"wscript.exe\", \"cscript.exe\", \"node.exe\", \"python*.exe\") and\n   file.extension in~ (\n    \"pdf\", \"dll\", \"exe\", \"dat\", \"com\", \"bat\", \"cmd\", \"sys\", \"vbs\", \"vbe\", \"ps1\", \"hta\", \"txt\", \"js\", \"jse\",\n    \"wsh\", \"wsf\", \"sct\", \"docx\", \"doc\", \"xlsx\", \"xls\", \"pptx\", \"ppt\", \"rtf\", \"gif\", \"jpg\", \"png\", \"bmp\", \"img\", \"iso\"\n  ) and\n  file.path : \"C:\\\\*:*\" and\n  not file.name :(\"*:$DATA\", \"*PG$Secure\", \"*Zone.Identifier\", \"*com.apple.lastuseddate#PS\", \"*com.apple.provenance\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0780",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  process.name : \"fltMC.exe\" and process.args : \"unload\" and\n  not process.parent.executable : \n                   (\"?:\\\\Program Files (x86)\\\\ManageEngine\\\\UEMS_Agent\\\\bin\\\\DCFAService64.exe\", \n                    \"?:\\\\Windows\\\\SysWOW64\\\\msiexec.exe\", \n                    \"?:\\\\Program Files\\\\Bitdefender\\\\Endpoint Security\\\\installer\\\\installer.exe\", \n                    \"?:\\\\Program Files\\\\Bitdefender\\\\Endpoint Security\\\\EPSecurityService.exe\", \n                    \"?:\\\\Program Files\\\\Bitdefender\\\\Bitdefender Security\\\\productcfg.exe\", \n                    \"?:\\\\Program Files\\\\Bitdefender\\\\Bitdefender Security\\\\bdservicehost.exe\", \n                    \"?:\\\\Program Files\\\\Bitdefender\\\\EndpointSetupInformation\\\\{*}\\\\Installer.exe\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0786",
+    "query": "process where host.os.type == \"windows\" and event.type : \"start\" and\n (process.name : \"Dism.exe\" or ?process.pe.original_file_name == \"DISM.EXE\") and \n process.command_line : \"*Microsoft-Windows-Subsystem-Linux*\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0792",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  (process.name : \"AdFind*.exe\" or ?process.pe.original_file_name == \"AdFind.exe\") and\n  process.args : (\"objectcategory=computer\", \"(objectcategory=computer)\",\n                  \"objectcategory=person\", \"(objectcategory=person)\",\n                  \"objectcategory=subnet\", \"(objectcategory=subnet)\",\n                  \"objectcategory=group\", \"(objectcategory=group)\",\n                  \"objectcategory=organizationalunit\", \"(objectcategory=organizationalunit)\",\n                  \"objectcategory=attributeschema\", \"(objectcategory=attributeschema)\",\n                  \"domainlist\", \"dcmodes\", \"adinfo\", \"dclist\", \"computers_pwnotreqd\", \"trustdmp\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0798",
+    "query": "any where host.os.type == \"windows\" and event.code == \"4662\" and not winlog.event_data.SubjectUserSid : \"S-1-5-18\" and\n winlog.event_data.AccessMaskDescription == \"Read Property\" and length(winlog.event_data.Properties) \u003e= 2000",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0804",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n (process.name : \"xwizard.exe\" or ?process.pe.original_file_name : \"xwizard.exe\") and\n (\n   (process.args : \"RunWizard\" and process.args : \"{*}\") or\n   (process.executable != null and\n     not process.executable : (\n        \"C:\\\\Windows\\\\SysWOW64\\\\xwizard.exe\",\n        \"C:\\\\Windows\\\\System32\\\\xwizard.exe\",\n\n        /* Crowdstrike specific exclusion as it uses NT Object paths */\n        \"\\\\Device\\\\HarddiskVolume*\\\\Windows\\\\SysWOW64\\\\xwizard.exe\",\n        \"\\\\Device\\\\HarddiskVolume*\\\\Windows\\\\System32\\\\xwizard.exe\"\n     )\n   )\n )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0810",
+    "query": "file where host.os.type == \"windows\" and event.type == \"creation\" and file.extension == \"url\"\n   and file.Ext.windows.zone_identifier == 3",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0816",
+    "query": "any where host.os.type == \"windows\" and process.name : \"promecefpluginhost.exe\" and\n(\n (event.category == \"library\" and\n  ?dll.path :\n     (\"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Temp\\\\wps\\\\INetCache\\\\*\",\n      \"\\\\Device\\\\Mup\\\\**\", \"\\\\\\\\*\")) or\n\n  ((event.category == \"process\" and event.action : \"Image loaded*\") and\n  ?file.path :\n     (\"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Temp\\\\wps\\\\INetCache\\\\*\",\n      \"\\\\Device\\\\Mup\\\\**\", \"\\\\\\\\*\"))\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0822",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  process.command_line != null and\n  (\n    process.name : (\"powershell.exe\", \"pwsh.exe\", \"powershell_ise.exe\", \"cmd.exe\") or\n    ?process.pe.original_file_name : (\"powershell.exe\", \"pwsh.dll\", \"powershell_ise.exe\", \"Cmd.Exe\")\n  ) and\n  process.parent.name : (\"wscript.exe\", \"mshta.exe\") and\n  not (\n    process.args : (\n      \"C:\\\\Program Files\\\\Intel\\\\SUR\\\\QUEENCREEK\\\\x64\\\\task.bat\",\n      \"\\\"C:\\\\Program Files\\\\Intel\\\\SUR\\\\QUEENCREEK\\\\x64\\\\task.bat\\\"\"\n    ) or\n    process.command_line : (\n      \"\\\"C:\\\\Windows\\\\system32\\\\cmd.exe\\\" /c auditpol.exe /set /SUBCATEGORY:*\",\n      \"\\\"C:\\\\Windows\\\\system32\\\\cmd.exe\\\" /c auditpol.exe /get*\",\n      \"\\\"C:\\\\Windows\\\\system32\\\\cmd.exe\\\" /c exit\\\"\"\n    ) or\n    (process.args == \"-File\" and process.args == \"-ExecutionPolicy\")\n  )\n  and \n  not (\n    ?user.id == \"S-1-5-18\" and\n    /* Don't apply the user.id exclusion to Sysmon for compatibility */\n    not data_stream.dataset : (\"windows.sysmon_operational\", \"windows.sysmon\")\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0828",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and process.name : \"wscript.exe\" and\n process.parent.name : (\"explorer.exe\", \"winrar.exe\", \"7zFM.exe\") and\n process.args :\n        (\"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Temp\\\\7z*\\\\*\",\n         \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Temp\\\\*.zip.*\\\\*\",\n         \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Temp\\\\Rar$*\\\\*\",\n         \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Temp\\\\Temp?_*\\\\*\",\n         \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Temp\\\\BNZ.*\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0834",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  process.pe.original_file_name : \"psexesvc.exe\" and not process.name : \"PSEXESVC.exe\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0840",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n process.parent.args == \"--message-loop-type-ui\" and process.parent.args == \"--service-sandbox-type=none\" and\n (\n  process.name : (\"pwsh.exe\", \"powershell.exe\", \"curl.exe\", \"msiexec.exe\", \"mshta.exe\", \"wscript.exe\", \"cscript.exe\", \"rundll32.exe\", \"certutil.exe\", \"certreq.exe\") or\n  process.executable : \"?:\\\\Users\\\\*\\\\Downloads\\\\*\"\n  ) and\nnot (process.name : \"rundll32.exe\" and process.args : (\"ndfapi.dll,NdfRunDllDiagnoseWithAnswerFile\", \"shwebsvc.dll,AddNetPlaceRunDll\"))",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0846",
+    "query": "file where host.os.type == \"windows\" and event.type in (\"change\", \"deletion\") and\n  file.name : (\"winload.exe\", \"winload.efi\", \"ntoskrnl.exe\", \"bootmgr\") and\n  file.path : (\"?:\\\\Windows\\\\*\", \"\\\\Device\\\\HarddiskVolume*\\\\Windows\\\\*\") and\n  not process.executable : (\n    \"?:\\\\Windows\\\\System32\\\\poqexec.exe\",\n    \"?:\\\\Windows\\\\System32\\\\wbengine.exe\",\n    \"?:\\\\Windows\\\\WinSxS\\\\???64_microsoft-windows-servicingstack_*\\\\tiworker.exe\"\n  ) and\n  not file.path : (\n    \"?:\\\\Windows\\\\WinSxS\\\\Temp\\\\InFlight\\\\*\",\n    \"?:\\\\Windows\\\\SoftwareDistribution\\\\Download*\",\n    \"?:\\\\Windows\\\\WinSxS\\\\amd64_microsoft-windows*\",\n    \"?:\\\\Windows\\\\SystemTemp\\\\*\",\n    \"?:\\\\Windows\\\\Temp\\\\????????.???\\\\*\",\n    \"?:\\\\Windows\\\\Temp\\\\*\\\\amd64_microsoft-windows-*\",\n    \"\\\\Device\\\\HarddiskVolume*\\\\Windows\\\\SoftwareDistribution\\\\Download*\",\n    \"?:\\\\Windows\\\\Temp\\\\BootImages\\\\{*}\\\\mount\\\\Windows\\\\*\"\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0852",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  (process.name : \"WMIC.exe\" or ?process.pe.original_file_name == \"wmic.exe\") and\n  process.args : \"delete\" and process.args : \"shadowcopy\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0858",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  process.parent.executable :\n                 (\"?:\\\\TeamCity\\\\jre\\\\bin\\\\java.exe\",\n                  \"?:\\\\Program Files\\\\TeamCity\\\\jre\\\\bin\\\\java.exe\",\n                  \"?:\\\\Program Files (x86)\\\\TeamCity\\\\jre\\\\bin\\\\java.exe\",\n                  \"?:\\\\TeamCity\\\\BuildAgent\\\\jre\\\\bin\\\\java.exe\") and\n  process.name : (\"cmd.exe\", \"powershell.exe\", \"msiexec.exe\", \"certutil.exe\", \"bitsadmin.exe\", \"wmic.exe\", \"curl.exe\", \"ssh.exe\",\n                   \"rundll32.exe\", \"regsvr32.exe\", \"mshta.exe\", \"certreq.exe\", \"net.exe\", \"nltest.exe\", \"whoami.exe\", \"hostname.exe\",\n                   \"tasklist.exe\", \"arp.exe\", \"nbtstat.exe\", \"netstat.exe\", \"reg.exe\", \"tasklist.exe\", \"Microsoft.Workflow.Compiler.exe\",\n                   \"arp.exe\", \"atbroker.exe\", \"bginfo.exe\", \"bitsadmin.exe\", \"cdb.exe\", \"cmstp.exe\", \"control.exe\", \"cscript.exe\", \"csi.exe\",\n                   \"dnx.exe\", \"dsget.exe\", \"dsquery.exe\", \"forfiles.exe\", \"fsi.exe\", \"ftp.exe\", \"gpresult.exe\", \"ieexec.exe\", \"iexpress.exe\",\n                   \"installutil.exe\", \"ipconfig.exe\",\"msxsl.exe\", \"netsh.exe\", \"odbcconf.exe\", \"ping.exe\", \"pwsh.exe\", \"qprocess.exe\",\n                   \"quser.exe\", \"qwinsta.exe\", \"rcsi.exe\", \"regasm.exe\", \"regsvcs.exe\", \"regsvr32.exe\", \"sc.exe\", \"schtasks.exe\",\n                   \"systeminfo.exe\", \"tracert.exe\", \"wmic.exe\", \"wscript.exe\",\"xwizard.exe\", \"explorer.exe\", \"msdt.exe\") and\n not (process.name : \"powershell.exe\" and process.args : \"-ExecutionPolicy\" and process.args : \"?:\\\\TeamCity\\\\buildAgent\\\\work\\\\*.ps1\") and\n not (process.name : \"cmd.exe\" and process.args : \"dir\" and process.args : \"/-c\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0864",
+    "query": "file where host.os.type == \"windows\" and event.type == \"creation\" and\n  process.name : (\"UMWorkerProcess.exe\", \"umservice.exe\") and\n  file.extension : (\"php\", \"jsp\", \"js\", \"aspx\", \"asmx\", \"asax\", \"cfm\", \"shtml\") and\n  (\n    file.path : \"?:\\\\inetpub\\\\wwwroot\\\\aspnet_client\\\\*\" or\n\n    (file.path : \"?:\\\\*\\\\Microsoft\\\\Exchange Server*\\\\FrontEnd\\\\HttpProxy\\\\owa\\\\auth\\\\*\" and\n       not (file.path : \"?:\\\\*\\\\Microsoft\\\\Exchange Server*\\\\FrontEnd\\\\HttpProxy\\\\owa\\\\auth\\\\version\\\\*\" or\n            file.name : (\"errorFE.aspx\", \"expiredpassword.aspx\", \"frowny.aspx\", \"GetIdToken.htm\", \"logoff.aspx\",\n                        \"logon.aspx\", \"OutlookCN.aspx\", \"RedirSuiteServiceProxy.aspx\", \"signout.aspx\"))) or\n\n    (file.path : \"?:\\\\*\\\\Microsoft\\\\Exchange Server*\\\\FrontEnd\\\\HttpProxy\\\\ecp\\\\auth\\\\*\" and\n       not file.name : \"TimeoutLogoff.aspx\")\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0870",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  process.parent.executable : \"C:\\\\Program Files\\\\Internet Explorer\\\\iediagcmd.exe\" and\n  process.name : (\"route.exe\", \"netsh.exe\", \"ipconfig.exe\", \"dxdiag.exe\", \"conhost.exe\", \"makecab.exe\") and\n  process.executable != null and\n  not process.executable : (\"C:\\\\Windows\\\\System32\\\\route.exe\",\n                            \"C:\\\\Windows\\\\System32\\\\netsh.exe\",\n                            \"C:\\\\Windows\\\\System32\\\\ipconfig.exe\",\n                            \"C:\\\\Windows\\\\System32\\\\dxdiag.exe\",\n                            \"C:\\\\Windows\\\\System32\\\\conhost.exe\",\n                            \"C:\\\\Windows\\\\System32\\\\makecab.exe\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0876",
+    "query": "sequence with maxspan=1m\n  [process where host.os.type == \"windows\" and event.type == \"start\" and\n     process.name : \"mshta.exe\" and process.args : \"-Embedding\"\n  ] by host.id, process.entity_id\n  [network where host.os.type == \"windows\" and event.type == \"start\" and process.name : \"mshta.exe\" and\n     network.direction : (\"incoming\", \"ingress\") and network.transport == \"tcp\" and\n     source.port \u003e 49151 and destination.port \u003e 49151 and source.ip != \"127.0.0.1\" and source.ip != \"::1\"\n  ] by host.id, process.entity_id",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0882",
+    "query": "sequence by host.id with maxspan=30s\n  [network where host.os.type == \"windows\" and event.type == \"start\" and process.pid == 4 and destination.port == 445 and\n   network.direction : (\"incoming\", \"ingress\") and\n   network.transport == \"tcp\" and source.ip != \"127.0.0.1\" and source.ip != \"::1\"\n  ] by process.entity_id\n  /* add more executable / script extensions here if they are not noisy in your environment */\n  [file where host.os.type == \"windows\" and event.type in (\"creation\", \"change\") and process.pid == 4 and user.id like (\"S-1-5-21*\", \"S-1-12-*\") and \n   (file.Ext.header_bytes : \"4d5a*\" or file.extension : (\"exe\", \"scr\", \"pif\", \"com\", \"dll\", \"bat\", \"cmd\", \"ps1\", \"vbs\", \"vbe\", \"js\", \"jse\", \"wsh\", \"wsf\", \"sct\", \"hta\", \"cpl\"))] by process.entity_id",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0888",
+    "query": "sequence by host.id with maxspan = 30s\n   [network where host.os.type == \"windows\" and network.direction : (\"incoming\", \"ingress\") and destination.port in (5985, 5986) and\n    source.ip != \"127.0.0.1\" and source.ip != \"::1\"]\n   [process where host.os.type == \"windows\" and\n    event.type == \"start\" and process.parent.name : \"wsmprovhost.exe\" and not process.executable : \"?:\\\\Windows\\\\System32\\\\conhost.exe\"]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0894",
+    "query": "iam where host.os.type == \"windows\" and event.action == \"scheduled-task-created\" and\n winlog.event_data.RpcCallClientLocality : \"0\" and winlog.event_data.ClientProcessId : \"0\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0900",
+    "query": "file where host.os.type == \"windows\" and event.type == \"creation\" and\n  file.path : (\n    \"?:\\\\Program Files (x86)\\\\Adobe\\\\Acrobat Reader DC\\\\Reader\\\\AcroCEF\\\\RdrCEF.exe\",\n    \"?:\\\\Program Files\\\\Adobe\\\\Acrobat Reader DC\\\\Reader\\\\AcroCEF\\\\RdrCEF.exe\",\n\n    /* Crowdstrike specific condition as it uses NT Object paths */\n    \"\\\\Device\\\\HarddiskVolume*\\\\Program Files (x86)\\\\Adobe\\\\Acrobat Reader DC\\\\Reader\\\\AcroCEF\\\\RdrCEF.exe\",\n    \"\\\\Device\\\\HarddiskVolume*\\\\Program Files\\\\Adobe\\\\Acrobat Reader DC\\\\Reader\\\\AcroCEF\\\\RdrCEF.exe\"\n  ) and\n  not process.name : (\"msiexec.exe\", \"AdobeARM.exe\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0906",
+    "query": "registry where host.os.type == \"windows\" and event.type in (\"change\", \"creation\") and\n  registry.path : (\n    \"HKLM\\\\SAM\\\\SAM\\\\Domains\\\\Account\\\\Users\\\\Names\\\\*$\\\\\",\n    \"\\\\REGISTRY\\\\MACHINE\\\\SAM\\\\SAM\\\\Domains\\\\Account\\\\Users\\\\Names\\\\*$\\\\\",\n    \"MACHINE\\\\SAM\\\\SAM\\\\Domains\\\\Account\\\\Users\\\\Names\\\\*$\\\\\"\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0912",
+    "query": "sequence by host.id with maxspan = 30s\n  [any where host.os.type == \"windows\" and \n    (event.category : (\"library\", \"driver\") or (event.category == \"process\" and event.action : \"Image loaded*\")) and\n    (?dll.name : \"taskschd.dll\" or file.name : \"taskschd.dll\") and\n    process.name : (\"cscript.exe\", \"wscript.exe\", \"powershell.exe\", \"pwsh.exe\", \"powershell_ise.exe\")]\n  [registry where host.os.type == \"windows\" and event.type == \"change\" and registry.value : \"Actions\" and\n    registry.path : (\n      \"HKLM\\\\SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Schedule\\\\TaskCache\\\\Tasks\\\\*\\\\Actions\",\n      \"\\\\REGISTRY\\\\MACHINE\\\\SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Schedule\\\\TaskCache\\\\Tasks\\\\*\\\\Actions\"\n  )]",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0918",
+    "query": "registry where host.os.type == \"windows\" and event.type == \"change\" and\n  registry.path : (\n    \"HKLM\\\\Software\\\\Microsoft\\\\netsh\\\\*\",\n    \"\\\\REGISTRY\\\\MACHINE\\\\Software\\\\Microsoft\\\\netsh\\\\*\",\n    \"MACHINE\\\\Software\\\\Microsoft\\\\netsh\\\\*\"\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0924",
+    "query": "registry where host.os.type == \"windows\" and event.type == \"change\" and \n registry.data.strings != null and registry.hive : (\"HKEY_USERS\", \"HKLM\") and\n registry.path : (\n     /* Machine Hive */\n     \"HKLM\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run\\\\*\",\n     \"HKLM\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\RunOnce\\\\*\",\n     \"HKLM\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\RunOnceEx\\\\*\",\n     \"HKLM\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\Run\\\\*\",\n     \"HKLM\\\\Software\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Winlogon\\\\Shell\\\\*\",\n     /* Users Hive */\n     \"HKEY_USERS\\\\*\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Run\\\\*\",\n     \"HKEY_USERS\\\\*\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\RunOnce\\\\*\",\n     \"HKEY_USERS\\\\*\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\RunOnceEx\\\\*\",\n     \"HKEY_USERS\\\\*\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Policies\\\\Explorer\\\\Run\\\\*\",\n     \"HKEY_USERS\\\\*\\\\Software\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Winlogon\\\\Shell\\\\*\"\n     ) and\n  /* add common legitimate changes without being too restrictive as this is one of the most abused AESPs */\n  not registry.data.strings : \"ctfmon.exe /n\" and\n  not (registry.value : \"Application Restart #*\" and process.name : \"csrss.exe\") and\n  not user.id : (\"S-1-5-18\", \"S-1-5-19\", \"S-1-5-20\") and\n  not registry.data.strings : (\"*:\\\\Program Files\\\\*\",\n                               \"*:\\\\Program Files (x86)\\\\*\",\n                               \"*:\\\\Users\\\\*\\\\AppData\\\\Local\\\\*\",\n                               \"* --processStart *\",\n                               \"* --process-start-args *\",\n                               \"ms-teamsupdate.exe -UninstallT20\",\n                               \" \",\n                               \"grpconv -o\", \"* /burn.runonce*\", \"* /startup\",\n                               \"?:\\\\WINDOWS\\\\SysWOW64\\\\Macromed\\\\Flash\\\\FlashUtil32_*_Plugin.exe -update plugin\") and\n  not process.executable : (\"?:\\\\Windows\\\\System32\\\\msiexec.exe\",\n                            \"?:\\\\Windows\\\\SysWOW64\\\\msiexec.exe\",\n                            \"D:\\\\*\",\n                            \"\\\\Device\\\\Mup*\",\n                            \"C:\\\\Windows\\\\SysWOW64\\\\reg.exe\",\n                            \"C:\\\\Windows\\\\System32\\\\changepk.exe\",\n                            \"C:\\\\Windows\\\\System32\\\\netsh.exe\",\n                            \"C:\\\\$WINDOWS.~BT\\\\Sources\\\\SetupPlatform.exe\",\n                            \"C:\\\\$WINDOWS.~BT\\\\Sources\\\\SetupHost.exe\",\n                            \"C:\\\\Program Files\\\\Cisco Spark\\\\CiscoCollabHost.exe\",\n                            \"C:\\\\Sistemas\\\\Programas MP\\\\CCleaner\\\\CCleaner64.exe\",\n                            \"C:\\\\Program Files (x86)\\\\FastTrack Software\\\\Admin By Request\\\\AdminByRequest.exe\",\n                            \"C:\\\\Program Files (x86)\\\\Exclaimer Ltd\\\\Cloud Signature Update Agent\\\\Exclaimer.CloudSignatureAgent.exe\",\n                            \"C:\\\\ProgramData\\\\Lenovo\\\\Vantage\\\\AddinData\\\\LenovoBatteryGaugeAddin\\\\x64\\\\QSHelper.exe\",\n                            \"C:\\\\Program Files (x86)\\\\Microsoft\\\\Edge\\\\Application\\\\*\\\\Installer\\\\setup.exe\",\n                            \"C:\\\\ProgramData\\\\bomgar-scc-*\\\\bomgar-scc.exe\",\n                            \"C:\\\\Windows\\\\SysWOW64\\\\Macromed\\\\Flash\\\\FlashUtil*_pepper.exe\",\n                            \"C:\\\\Windows\\\\System32\\\\spool\\\\drivers\\\\x64\\\\3\\\\*.EXE\",\n                            \"C:\\\\Program Files (x86)\\\\Common Files\\\\Adobe\\\\ARM\\\\*\\\\AdobeARM.exe\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0930",
+    "query": "registry where host.os.type == \"windows\" and event.type == \"change\" and\n  registry.data.strings != null and registry.value : (\"ServiceDLL\", \"ImagePath\") and\n  registry.path : (\n      \"HKLM\\\\SYSTEM\\\\ControlSet*\\\\Services\\\\*\\\\ServiceDLL\",\n      \"HKLM\\\\SYSTEM\\\\ControlSet*\\\\Services\\\\*\\\\ImagePath\",\n      \"\\\\REGISTRY\\\\MACHINE\\\\SYSTEM\\\\ControlSet*\\\\Services\\\\*\\\\ServiceDLL\",\n      \"\\\\REGISTRY\\\\MACHINE\\\\SYSTEM\\\\ControlSet*\\\\Services\\\\*\\\\ImagePath\",\n      \"MACHINE\\\\SYSTEM\\\\ControlSet*\\\\Services\\\\*\\\\ServiceDLL\",\n      \"MACHINE\\\\SYSTEM\\\\ControlSet*\\\\Services\\\\*\\\\ImagePath\"\n  ) and not registry.data.strings : (\n      \"?:\\\\windows\\\\system32\\\\Drivers\\\\*.sys\",\n      \"\\\\SystemRoot\\\\System32\\\\drivers\\\\*.sys\",\n      \"\\\\??\\\\?:\\\\Windows\\\\system32\\\\Drivers\\\\*.SYS\",\n      \"\\\\??\\\\?:\\\\Windows\\\\syswow64\\\\*.sys\",\n      \"system32\\\\DRIVERS\\\\USBSTOR\", \n      \"system32\\\\drivers\\\\*.sys\", \n      \"C:\\\\WindowsAzure\\\\GuestAgent*.exe\", \n      \"\\\"C:\\\\Program Files\\\\Common Files\\\\McAfee\\\\*\", \n      \"C:\\\\Program Files (x86)\\\\VERITAS\\\\VxPBX\\\\bin\\\\pbx_exchange.exe\", \n      \"\\\"C:\\\\Program Files (x86)\\\\VERITAS\\\\VxPBX\\\\bin\\\\pbx_exchange.exe\\\"\",\n      \"\\\"C:\\\\ProgramData\\\\McAfee\\\\Agent\\\\Current\\\\*\") and\n  not (process.name : \"procexp??.exe\" and registry.data.strings : \"?:\\\\*\\\\procexp*.sys\") and\n  not process.executable : (\n      \"?:\\\\Program Files\\\\*.exe\",\n      \"?:\\\\Program Files (x86)\\\\*.exe\",\n      \"?:\\\\Windows\\\\System32\\\\svchost.exe\",\n      \"?:\\\\Windows\\\\winsxs\\\\*\\\\TiWorker.exe\",\n      \"?:\\\\Windows\\\\System32\\\\drvinst.exe\",\n      \"?:\\\\Windows\\\\System32\\\\services.exe\",\n      \"?:\\\\Windows\\\\System32\\\\msiexec.exe\",\n      \"?:\\\\Windows\\\\System32\\\\regsvr32.exe\",\n      \"?:\\\\Windows\\\\System32\\\\WaaSMedicAgent.exe\", \n      \"?:\\\\Windows\\\\UUS\\\\amd64\\\\WaaSMedicAgent.exe\"\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0936",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n    /* Schedule service cmdline on Win10+ */\n    process.parent.name : \"svchost.exe\" and process.parent.args : \"Schedule\" and\n    /* add suspicious programs here */\n    process.pe.original_file_name in\n                                (\n                                  \"cscript.exe\",\n                                  \"wscript.exe\",\n                                  \"PowerShell.EXE\",\n                                  \"Cmd.Exe\",\n                                  \"MSHTA.EXE\",\n                                  \"RUNDLL32.EXE\",\n                                  \"REGSVR32.EXE\",\n                                  \"MSBuild.exe\",\n                                  \"InstallUtil.exe\",\n                                  \"RegAsm.exe\",\n                                  \"RegSvcs.exe\",\n                                  \"msxsl.exe\",\n                                  \"CONTROL.EXE\",\n                                  \"EXPLORER.EXE\",\n                                  \"Microsoft.Workflow.Compiler.exe\",\n                                  \"msiexec.exe\"\n                                  ) and\n    /* add suspicious paths here */\n    process.args : (\n       \"C:\\\\Users\\\\*\",\n       \"C:\\\\ProgramData\\\\*\",\n       \"C:\\\\Windows\\\\Temp\\\\*\",\n       \"C:\\\\Windows\\\\Tasks\\\\*\",\n       \"C:\\\\PerfLogs\\\\*\",\n       \"C:\\\\Intel\\\\*\",\n       \"C:\\\\Windows\\\\Debug\\\\*\",\n       \"C:\\\\HP\\\\*\") and\n\n    not (process.name : \"cmd.exe\" and process.args : (\"*.bat\", \"*.cmd\")) and\n    not (process.name : \"cscript.exe\" and process.args : \"?:\\\\Windows\\\\system32\\\\calluxxprovider.vbs\") and\n    not (\n       process.name : \"powershell.exe\" and\n       process.args : (\n           \"-File\", \"-PSConsoleFile\",\n           \"C:\\\\ProgramData\\\\Microsoft\\\\AutopatchSetupScheduled\\\\SetupAutopatchClientV2Package.ps1\",\n           \"C:\\\\ProgramData\\\\Microsoft\\\\AutopatchSetupScheduled\\\\SetupAutopatchClientPackage.ps1\",\n           \"C:\\\\Windows\\\\Temp\\\\MSS\\\\MDESetup\\\\Invoke-MDESetup.ps1\"\n       ) and user.id : \"S-1-5-18\"\n    ) and\n    not (process.name : \"msiexec.exe\" and user.id : \"S-1-5-18\") and\n    not (process.name : \"powershell.exe\" and\n         process.command_line : (\"C:\\\\ProgramData\\\\ElasticAgent-HealthCheck.ps1\",\n                                 \"C:\\\\ProgramData\\\\ssh\\\\puttysetup.ps1\"))",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0942",
+    "query": "registry where host.os.type == \"windows\" and event.type == \"change\" and\n  registry.path: \"*\\\\SYSTEM\\\\*ControlSet*\\\\Services\\\\W32Time\\\\TimeProviders\\\\*\" and\n  registry.data.strings:\"*.dll\" and\n  not\n  (\n    process.executable : (\"?:\\\\Windows\\\\System32\\\\msiexec.exe\", \"\\\\Device\\\\HarddiskVolume*\\\\Windows\\\\System32\\\\msiexec.exe\") and\n    registry.data.strings : \"?:\\\\Program Files\\\\VMware\\\\VMware Tools\\\\vmwTimeProvider\\\\vmwTimeProvider.dll\"\n  ) and\n  not registry.data.strings : \"C:\\\\Windows\\\\SYSTEM32\\\\w32time.DLL\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0948",
+    "query": "registry where host.os.type == \"windows\" and event.type == \"change\" and\n  registry.value : \"Security Packages\" and\n  registry.path : (\n      \"*\\\\SYSTEM\\\\*ControlSet*\\\\Control\\\\Lsa\\\\Security Packages\",\n      \"*\\\\SYSTEM\\\\*ControlSet*\\\\Control\\\\Lsa\\\\OSConfig\\\\Security Packages\"\n  ) and\n  not process.executable : (\n        \"C:\\\\Windows\\\\System32\\\\msiexec.exe\",\n        \"C:\\\\Windows\\\\SysWOW64\\\\msiexec.exe\",\n        /* Crowdstrike specific exclusion as it uses NT Object paths */\n        \"\\\\Device\\\\HarddiskVolume*\\\\Windows\\\\System32\\\\msiexec.exe\",\n        \"\\\\Device\\\\HarddiskVolume*\\\\Windows\\\\SysWOW64\\\\msiexec.exe\"\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0954",
+    "query": "registry where host.os.type == \"windows\" and event.type == \"change\" and\n  registry.value : \"ReflectDebugger\"\n\n  /*\n    Full registry key path omitted due to data source variations:\n    HKLM\\\\Software\\\\Microsoft\\\\Windows\\\\Windows Error Reporting\\\\Hangs\\\\ReflectDebugger\n  */",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0960",
+    "query": "file where host.os.type == \"windows\" and event.type != \"deletion\" and\n    file.name : \"MPDW-constraints.js\" and\n    file.path : (\n        \"?:\\\\*\\\\Windows\\\\system32\\\\DriverStore\\\\FileRepository\\\\*\\\\MPDW-constraints.js\",\n        \"?:\\\\*\\\\Windows\\\\WinSxS\\\\amd64_microsoft-windows-printing-printtopdf_*\\\\MPDW-constraints.js\", \n        \"\\\\Device\\\\HarddiskVolume*\\\\*\\\\Windows\\\\system32\\\\DriverStore\\\\FileRepository\\\\*\\\\MPDW-constraints.js\",\n        \"\\\\Device\\\\HarddiskVolume*\\\\*\\\\Windows\\\\WinSxS\\\\amd64_microsoft-windows-printing-printtopdf_*\\\\MPDW-constraints.js\"\n    ) and\n    not process.executable : (\n          \"?:\\\\$WINDOWS.~BT\\\\Sources\\\\SetupHost.exe\",\n          \"?:\\\\Windows\\\\System32\\\\taskhostw.exe\"\n    ) and\n    not file.path : (\n        \"?:\\\\$WINDOWS.~BT\\\\NewOS\\\\Windows\\\\WinSxS\\\\*\\\\MPDW-constraints.js\",\n        \"\\\\Device\\\\HarddiskVolume*\\\\$WINDOWS.~BT\\\\NewOS\\\\Windows\\\\WinSxS\\\\*\\\\MPDW-constraints.js\"\n    )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0966",
+    "query": "sequence by winlog.computer_name with maxspan=5m\n [authentication where host.os.type == \"windows\" and\n\n  /* event 4624 need to be logged */\n  event.action == \"logged-in\" and event.outcome == \"success\" and winlog.event_data.ElevatedToken == \"%%1843\" and process.pid == 0 and \n\n  /* authenticate locally using relayed kerberos Ticket */\n  winlog.event_data.AuthenticationPackageName :\"Kerberos\" and winlog.logon.type == \"Network\" and cidrmatch(source.ip, \"127.0.0.0/8\", \"::1\")] by winlog.event_data.TargetLogonId\n\n  [any where host.os.type == \"windows\" and\n   /* event 4697 need to be logged */\n   event.action : \"service-installed\"] by winlog.event_data.SubjectLogonId",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0972",
+    "query": "registry where host.os.type == \"windows\" and event.type == \"change\" and\n  registry.path : (\n      \"HKLM\\\\SYSTEM\\\\*ControlSet*\\\\Control\\\\Print\\\\Monitors\\\\*\",\n      \"HKLM\\\\SYSTEM\\\\*ControlSet*\\\\Control\\\\Print\\\\Environments\\\\Windows*\\\\Print Processors\\\\*\",\n      \"\\\\REGISTRY\\\\MACHINE\\\\SYSTEM\\\\*ControlSet*\\\\Control\\\\Print\\\\Monitors\\\\*\",\n      \"\\\\REGISTRY\\\\MACHINE\\\\SYSTEM\\\\*ControlSet*\\\\Control\\\\Print\\\\Environments\\\\Windows*\\\\Print Processors\\\\*\"\n  ) and registry.data.strings : \"*.dll\" and\n  /* exclude SYSTEM SID - look for changes by non-SYSTEM user */\n  not user.id : \"S-1-5-18\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0978",
+    "query": "iam where host.os.type == \"windows\" and event.action == \"renamed-user-account\" and\n  /* machine account name renamed to user like account name */\n  winlog.event_data.OldTargetUserName : \"*$\" and not winlog.event_data.NewTargetUserName : \"*$\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0984",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n process.parent.name == \"dllhost.exe\" and\n process.parent.args in (\"/Processid:{3E5FC7F9-9A51-4367-9063-A120244FBEC7}\", \"/Processid:{D2E7041B-2927-42FB-8E9F-7CE93B6DC937}\") and\n process.pe.original_file_name != \"WerFault.exe\" and\n not (process.executable : \"?:\\\\Program Files\\\\WireGuard\\\\wireguard.exe\" and process.args : \"/installmanagerservice\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0990",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  (\n    process.executable : \"?:\\\\Program.exe\" or\n    process.executable regex \"\"\"(C:\\\\Program Files \\(x86\\)\\\\|C:\\\\Program Files\\\\)\\w+.exe\"\"\"\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_0996",
+    "query": "process where host.os.type == \"windows\" and event.action == \"start\" and\n\n /* CreateProcessWithToken and effective parent is a privileged MS native binary used as a target for token theft */\n user.id == \"S-1-5-18\"  and process.parent.executable != null and\n\n /* Token Theft target process usually running as service are located in one of the following paths */\n process.Ext.effective_parent.executable : \"?:\\\\Windows\\\\*.exe\" and\n\n/* Ignores Utility Manager in Windows running in debug mode */\n not (process.Ext.effective_parent.executable : \"?:\\\\Windows\\\\System32\\\\Utilman.exe\" and\n      process.parent.executable : \"?:\\\\Windows\\\\System32\\\\Utilman.exe\" and process.parent.args : \"/debug\") and\n\n/* Ignores Windows print spooler service with correlation to Access Intelligent Form */\nnot (process.parent.executable : (\"?:\\\\Windows\\\\System32\\\\spoolsv.exe\", \"?:\\\\Windows\\\\System32\\\\PrintIsolationHost.exe\") and\n     process.executable: (\"?:\\\\Program Files\\\\*.exe\",\n                          \"?:\\\\Program Files (x86)\\\\*.exe\",\n                          \"?:\\\\Windows\\\\System32\\\\spool\\\\drivers\\\\*.exe\",\n                          \"?:\\\\Windows\\\\System32\\\\ROUTE.EXE\")) and\n\n/* Ignores Windows error reporting executables */\n not process.executable : (\"?:\\\\Windows\\\\System32\\\\WerFault.exe\",\n                           \"?:\\\\Windows\\\\SysWOW64\\\\WerFault.exe\",\n                           \"?:\\\\Windows\\\\System32\\\\WerFaultSecure.exe\",\n                           \"?:\\\\Windows\\\\SysWOW64\\\\WerFaultSecure.exe\",\n                           \"?:\\\\windows\\\\system32\\\\WerMgr.exe\",\n                           \"?:\\\\Windows\\\\SoftwareDistribution\\\\Download\\\\Install\\\\securityhealthsetup.exe\")  and\n\n /* Ignores Windows updates from TiWorker.exe that runs with elevated privileges */\n not (process.parent.executable : \"?:\\\\Windows\\\\WinSxS\\\\*\\\\TiWorker.exe\" and\n      process.executable : (\"?:\\\\Windows\\\\Microsoft.NET\\\\Framework*.exe\",\n                            \"?:\\\\Windows\\\\WinSxS\\\\*.exe\",\n                            \"?:\\\\Windows\\\\System32\\\\inetsrv\\\\iissetup.exe\",\n                            \"?:\\\\Windows\\\\SysWOW64\\\\inetsrv\\\\iissetup.exe\",\n                            \"?:\\\\Windows\\\\System32\\\\inetsrv\\\\aspnetca.exe\",\n                            \"?:\\\\Windows\\\\SysWOW64\\\\inetsrv\\\\aspnetca.exe\",\n                            \"?:\\\\Windows\\\\System32\\\\lodctr.exe\",\n                            \"?:\\\\Windows\\\\SysWOW64\\\\lodctr.exe\",\n                            \"?:\\\\Windows\\\\System32\\\\netcfg.exe\",\n                            \"?:\\\\Windows\\\\Microsoft.NET\\\\Framework*\\\\*\\\\ngen.exe\",\n                            \"?:\\\\Windows\\\\Microsoft.NET\\\\Framework*\\\\*\\\\aspnet_regiis.exe\")) and\n\n/* Ignores additional parent executables that run with elevated privileges */\n not process.parent.executable :\n               (\"?:\\\\Windows\\\\System32\\\\AtBroker.exe\",\n                \"?:\\\\Windows\\\\system32\\\\svchost.exe\",\n                \"?:\\\\Program Files (x86)\\\\*.exe\",\n                \"?:\\\\Program Files\\\\*.exe\",\n                \"?:\\\\Windows\\\\System32\\\\msiexec.exe\",\n                \"?:\\\\Windows\\\\System32\\\\DriverStore\\\\*\",\n                \"?:\\\\Windows\\\\LTSvc\\\\*\\\\Update.exe\") and\n\n/* Ignores Windows binaries with a trusted signature and specific signature name */\n not (process.code_signature.trusted == true and\n      process.code_signature.subject_name :\n                (\"philandro Software GmbH\",\n                 \"Freedom Scientific Inc.\",\n                 \"TeamViewer Germany GmbH\",\n                 \"Projector.is, Inc.\",\n                 \"TeamViewer GmbH\",\n                 \"Cisco WebEx LLC\",\n                 \"Dell Inc\",\n                 \"Sophos Ltd\",\n                 \"Sophos Limited\",\n                 \"Brother Industries, Ltd.\",\n                 \"MILVUS INOVACOES EM SOFTWARE LTDA\",\n                 \"Chocolatey Software, Inc\")) and\n\n not (process.Ext.effective_parent.executable : \"?:\\\\Windows\\\\servicing\\\\TrustedInstaller.exe\" and\n      process.executable : \"C:\\\\Windows\\\\WinSxS\\\\amd64_microsoft-windows-servicingstack_*\\\\TiWorker.exe\") and\n\n not process.Ext.effective_parent.executable : \"?:\\\\Windows\\\\ServiceProfiles\\\\LocalService\\\\AppData\\\\Local\\\\ServicePortalAgent\\\\current\\\\emulator\\\\MmrAgent.NetFxEmulator.exe\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_1002",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  (\n   (process.name : \"bitsadmin.exe\" and process.args : (\n        \"*Transfer*\", \"*Create*\", \"AddFile\", \"*SetNotifyFlags*\", \"*SetNotifyCmdLine*\",\n        \"*SetMinRetryDelay*\", \"*SetCustomHeaders*\", \"*Resume*\")\n   ) or\n   (process.name : \"powershell.exe\" and process.args : (\n        \"*Start-BitsTransfer*\", \"*Add-BitsFile*\",\n        \"*Resume-BitsTransfer*\", \"*Set-BitsTransfer*\", \"*BITS.Manager*\")\n   )\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_1008",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  process.command_line : (\"*.pem *\", \"*.pem\", \"*.id_rsa*\") and\n  not process.args : (\n        \"--rootcert\",\n        \"--cert\",\n        \"--crlfile\"\n  ) and\n  not process.command_line : (\n        \"*--cacert*\",\n        \"*--ssl-cert*\",\n        \"*--tls-cert*\",\n        \"*--tls_server_certs*\"\n  ) and\n  not process.executable : (\n    \"?:\\\\ProgramData\\\\Logishrd\\\\LogiOptions\\\\Software\\\\*\\\\LogiLuUpdater.exe\",\n    \"?:\\\\Program Files\\\\Elastic\\\\Agent\\\\data\\\\*\\\\osqueryd.exe\",\n    \"?:\\\\Program Files\\\\Git\\\\cmd\\\\git.exe\",\n    \"?:\\\\Program Files\\\\Git\\\\mingw64\\\\bin\\\\git.exe\",\n    \"?:\\\\Program Files\\\\Guardicore\\\\gc-controller.exe\",\n    \"?:\\\\Program Files\\\\Guardicore\\\\gc-deception-agent.exe\",\n    \"?:\\\\Program Files\\\\Guardicore\\\\gc-detection-agent.exe\",\n    \"?:\\\\Program Files\\\\Guardicore\\\\gc-enforcement-agent.exe\",\n    \"?:\\\\Program Files\\\\Guardicore\\\\gc-guest-agent.exe\",\n    \"?:\\\\Program Files\\\\Logi\\\\LogiBolt\\\\LogiBoltUpdater.exe\",\n    \"?:\\\\Program Files (x86)\\\\Schneider Electric EcoStruxure\\\\Building Operation 5.0\\\\Device Administrator\\\\Python\\\\python.exe\",\n    \"?:\\\\Program Files\\\\Splunk\\\\bin\\\\openssl.exe\",\n    \"?:\\\\Program Files\\\\SplunkUniversalForwarder\\\\bin\\\\openssl.exe\",\n    \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Logi\\\\LogiBolt\\\\LogiBoltUpdater.exe\",\n    \"?:\\\\Windows\\\\system32\\\\icacls.exe\",\n    \"?:\\\\Windows\\\\System32\\\\OpenSSH\\\\*\"\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_1014",
+    "query": "file where host.os.type == \"windows\" and event.type == \"creation\" and\n  file.extension : (\n    \"appinstaller\", \"application\", \"appx\", \"appxbundle\", \"cpl\", \"diagcab\", \"diagpkg\", \"diagcfg\", \"manifest\",\n    \"msix\", \"pif\", \"search-ms\", \"searchConnector-ms\", \"settingcontent-ms\", \"symlink\", \"theme\", \"themepack\" \n  ) and file.Ext.windows.zone_identifier \u003e 1 and\n  not\n  (\n    (\n      file.extension : \"msix\" and \n      file.path : (\n        \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Temp\\\\WinGet\\\\Microsoft.Winget.Source*\",\n        \"?:\\\\Windows\\\\system32\\\\config\\\\systemprofile\\\\AppData\\\\Local\\\\Microsoft\\\\WinGet\\\\State\\\\defaultState\\\\Microsoft.PreIndexed.Package\\\\Microsoft.Winget.Source*\"\n      )\n    ) or\n    (\n      process.name : \"Teams.exe\" and process.code_signature.trusted == true and\n      file.extension : \"msix\" and \n      file.path : \"?:\\\\Users\\\\*\\\\AppData\\\\Roaming\\\\Microsoft\\\\Teams\\\\tmp\\\\*\"\n    )\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_1020",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n  process.name : \"installutil.exe\" and not user.id : \"S-1-5-18\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_1026",
+    "query": "process where host.os.type == \"windows\" and event.action == \"start\" and\n  (process.name : \"msdt.exe\" or ?process.pe.original_file_name == \"msdt.exe\") and process.args : \"/cab\" and\n  process.parent.name : (\n    \"firefox.exe\", \"chrome.exe\", \"msedge.exe\", \"explorer.exe\", \"brave.exe\", \"whale.exe\", \"browser.exe\",\n    \"dragon.exe\", \"vivaldi.exe\", \"opera.exe\", \"iexplore\", \"firefox.exe\", \"waterfox.exe\", \"iexplore.exe\",\n    \"winrar.exe\", \"winrar.exe\", \"7zFM.exe\", \"outlook.exe\", \"winword.exe\", \"excel.exe\"\n  ) and\n  process.args : (\n    \"?:\\\\Users\\\\*\",\n    \"\\\\\\\\*\",\n    \"http*\",\n    \"ftp://*\"\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_1032",
+    "query": "process where host.os.type == \"windows\" and event.action == \"start\" and\n  process.name : \"msiexec.exe\" and user.id : (\"S-1-5-21*\", \"S-1-12-*\") and process.parent.executable != null and\n  (\n    (process.args : \"/i\" and process.args : (\"/q\", \"/quiet\") and process.args_count == 4 and\n     process.args : (\"?:\\\\Users\\\\*\", \"?:\\\\ProgramData\\\\*\") and\n     not process.parent.executable : (\"?:\\\\Program Files (x86)\\\\*.exe\",\n                                      \"?:\\\\Program Files\\\\*.exe\",\n                                      \"?:\\\\Windows\\\\explorer.exe\",\n                                      \"?:\\\\Users\\\\*\\\\Desktop\\\\*\",\n                                      \"?:\\\\Users\\\\*\\\\Downloads\\\\*\",\n                                      \"?:\\\\programdata\\\\*\")) or\n\n    (process.args_count == 1 and not process.parent.executable : (\"?:\\\\Windows\\\\explorer.exe\", \"?:\\\\Windows\\\\SysWOW64\\\\explorer.exe\")) or\n\n    (process.args : \"/i\" and process.args : (\"/q\", \"/quiet\") and process.args_count == 4 and\n     (process.parent.args : \"Schedule\" or process.parent.name : \"wmiprvse.exe\" or\n     process.parent.executable : \"?:\\\\Users\\\\*\\\\AppData\\\\*\" or\n     (process.parent.name : (\"powershell.exe\", \"cmd.exe\") and length(process.parent.command_line) \u003e= 200))) or\n\n    (process.args : \"/i\" and process.args : (\"/q\", \"/quiet\") and process.args_count == 4 and\n     ?process.working_directory : \"?:\\\\\" and process.parent.name : (\"cmd.exe\", \"powershell.exe\"))\n  ) and\n\n  /* noisy pattern */\n  not (process.parent.executable : \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Temp\\\\*\" and ?process.parent.args_count \u003e= 2 and\n       process.args : \"?:\\\\Users\\\\*\\\\AppData\\\\Local\\\\Temp\\\\*\\\\*.msi\") and\n\n  not process.args : (\"?:\\\\Program Files (x86)\\\\*\", \"?:\\\\Program Files\\\\*\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_1038",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and process.args != null and \n  not user.id in (\"S-1-5-18\", \"S-1-5-19\", \"S-1-5-20\") and process.parent.executable != null and\n  (\n   process.name :(\"PsList.exe\", \"qprocess.exe\") or\n\n   (process.name : \"powershell.exe\" and process.args : (\"*get-process*\", \"*Win32_Process*\") and not process.parent.name in (\"openaev-agent.exe\", \"cmd.exe\", \"Miro.exe\", \"Granola.exe\", \"Wispr Flow.exe\")) or\n\n   (process.name : \"wmic.exe\" and process.args : (\"process\", \"*Win32_Process*\") and not process.parent.name in (\"Code.exe\", \"node.exe\", \"javaw.exe\", \"java.exe\", \"asus_framework.exe\", \"Evernote.exe\", \"RingCentral.exe\", \"Avaya Cloud.exe\", \"Arduino IDE.exe\")) or\n\n   (process.name : \"tasklist.exe\" and process.args_count == 1 and process.parent.args != \"tasklist | findstr consent.exe\") or\n\n   (process.name : \"query.exe\" and process.args : (\"process\", \"imagename*\", \"csv\", \"/fi\"))\n  ) and\n  not process.working_directory like (\"?:\\\\Program Files*\", \"D:\\\\*\", \"E:\\\\*\") and\n  not process.parent.executable like (\"?:\\\\Program Files (x86)\\\\*.exe\", \"?:\\\\Program Files\\\\*.exe\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_1044",
+    "query": "process where host.os.type == \"linux\" and event.type == \"start\" and event.action in (\"exec\", \"exec_event\", \"executed\", \"process_started\", \"ProcessRollup2\")\n and (\n  process.name in (\"ldapsearch\", \"dscacheutil\") or (process.name == \"dscl\" and process.args : \"*-list*\")\n)",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_1050",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and\n(\n (\n    (process.name: \"net.exe\" or (process.name : \"net1.exe\" and not process.parent.name : \"net.exe\")) and \n    process.args : \"time\" and not process.args : \"/set\"\n ) or \n (process.name: \"w32tm.exe\" and process.args: \"/tz\") or \n (process.name: \"tzutil.exe\" and process.args: \"/g\")\n) and not user.id : (\"S-1-5-18\", \"S-1-5-19\", \"S-1-5-20\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_1056",
+    "query": "process where host.os.type == \"windows\" and event.type == \"start\" and process.name : \"wbemtest.exe\"",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules",
+    "name": "real_1062",
+    "query": "network where host.os.type == \"windows\" and\n  event.action == \"connection_attempted\" and destination.port == 3389 and\n  destination.ip != \"::1\" and destination.ip != \"127.0.0.1\" and\n  not (\n    process.executable : (\n      \"?:\\\\Windows\\\\System32\\\\mstsc.exe\",\n      \"?:\\\\Program Files (x86)\\\\mRemoteNG\\\\mRemoteNG.exe\",\n      \"?:\\\\Program Files (x86)\\\\PRTG Network Monitor\\\\PRTG Probe.exe\",\n      \"?:\\\\Program Files\\\\Azure Advanced Threat Protection Sensor\\\\*\\\\Microsoft.Tri.Sensor.exe\",\n      \"?:\\\\Program Files (x86)\\\\Microsoft\\\\Remote Desktop Connection Manager\\\\RDCMan.exe\",\n      \"?:\\\\Program Files\\\\SentinelOne\\\\Sentinel Agent*\\\\Ranger\\\\SentinelRanger.exe\",\n      \"?:\\\\Program Files\\\\Devolutions\\\\Remote Desktop Manager\\\\RemoteDesktopManager.exe\",\n      \"?:\\\\Program Files (x86)\\\\Devolutions\\\\Remote Desktop Manager\\\\RemoteDesktopManager.exe\"\n    ) and process.code_signature.trusted == true\n  )",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules:hunting",
+    "name": "real_1068",
+    "query": "file where event.action == \"modification\" and\n  process.name like~ \"python*\" and\n  file.Ext.header_bytes like~ (\"cffaedfe*\", \"cafebabe*\") and\n  file.path like (\"/Users/Shared/*\", \"/tmp/*\", \"/private/tmp/*\", \"/Users/*/Public/*\") and\n  not file.extension in (\"dylib\", \"so\")",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules:hunting",
+    "name": "real_1074",
+    "query": "sequence with maxspan=15s\n  [file where event.action == \"modification\" and process.name like~ \"python*\" and\n   file.extension == \"py\" and file.path like \"/Users/*\"] by process.entity_id\n  [process where event.type == \"start\" and event.action == \"exec\" and\n   process.args_count == 2 and process.args like \"/Users/*\"] by process.parent.entity_id",
+    "valid": true
+  },
+  {
+    "source": "real:elastic/detection-rules:hunting",
+    "name": "real_1080",
+    "query": "library where event.action == \"load\" and\n  dll.path like \"/Users/*\" and\n  process.name like~ \"python*\" and\n  not dll.name : (\"*.so\", \"*.dylib\")",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1086",
+    "query": "sequence by unique_pid with maxspan=5s\n  [process where subtype.create and process_name == \"cmd.exe\" and command_line == \"*\u003e*\" and\n    descendant of [process where process_name == \"wmiprvse.exe\"]]\n  [file where subtype.create and wildcard(file_name, \"*.txt\", \"*.log\")]",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1092",
+    "query": "image_load where process_name != \"vaultcmd.exe\" and\n  image_name == \"vaultcli.dll\"",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1098",
+    "query": "process where subtype.create\n  and process_name in (\"cat\", \"grep\")\n  and wildcard(command_line, \"*.bash_history*\", \"*password*\", \"*passwd*\")",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1104",
+    "query": "process where subtype.create and (\n  (process_name == \"rundll32.exe\" and command_line == \"*InetCpl.cpl,Clear*\") or\n  (process_name == \"reg.exe\" and command_line == \"* delete *\") or\n  (process_name == \"cmd.exe\" and command_line == \"* *rmdir *\")\n)",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1110",
+    "query": "process where subtype.create and\n  process_name == \"net.exe\" and command_line == \"* /d*\"",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1116",
+    "query": "process where subtype.create and\n  process_name == \"cmstp.exe\" and\n  command_line == \"* /s *\"",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1122",
+    "query": "process where subtype.create and\n  process_name in (\"cscript.exe\", \"wscript.exe\") and\n  command_line == \"* *.vbs* *script:http*\"",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1128",
+    "query": "process where subtype.create and (\n  process_name == \"nbtstat.exe\" and wildcard(command_line, \"* -n*\", \"* -s*\") or\n  process_name == \"arp.exe\" and command_line == \"* -a*\"\n)",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1134",
+    "query": "process where subtype.create and (\n  process_name == \"tasklist.exe\" and not matchLite(?\".* [-/]svc\", command_line) or\n  process_name == \"quser.exe\" or\n  (process_name == \"powershell.exe\" and command_line == \"*Get-Process*\")\n)",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1140",
+    "query": "sequence with maxspan=1h\n  [process where subtype.create and process_name == \"rundll32.exe\"] by unique_pid\n  [network where subtype.outgoing and process_name == \"rundll32.exe\"] by unique_pid\n  [process where subtype.create and parent_process_name == \"rundll32.exe\"] by unique_ppid",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1146",
+    "query": "process where subtype.create and (\n  (process_name == \"dsquery.exe\") and command_line == \"*(objectClass=trustedDomain)*\" or\n  (process_name == \"nltest.exe\") and command_line == \"*domain_trusts*\"\n)",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1152",
+    "query": "process where subtype.create and\n  process_name == \"trap\" and command_line == \"* signals*\"",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1158",
+    "query": "process where subtype.create and process_name == \"rar.exe\" and\n  command_line == \"* a *\"",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1164",
+    "query": "process where subtype.create and\n  process_name in (\"telnet.exe\", \"putty.exe\", \"ssh\")\n| unique_count parent_process_name, command_line",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1170",
+    "query": "registry where\n  wildcard(registry_path,\n           \"*\\\\Software[Wow6432Node]Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Winlogon\\\\*\",\n           \"*\\\\Software\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Winlogon\\\\*\")",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1176",
+    "query": "registry where\n  registry_path == \"\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Explorer\\\\*Shell Folders*\"",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1182",
+    "query": "process where subtype.create and\n  (process_name == \"net.exe\" or (process_name == \"net1.exe\" and parent_process_name != \"net.exe\")) and\n  command_line == \"* user */ad*\"",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1188",
+    "query": "file where file_name == \"rc.common\"",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1194",
+    "query": "process where subtype.create and\n  process_name == \"kextload\"",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1200",
+    "query": "process where subtype.create and\n  process_name = \"schtasks.exe\" and\n  command_line = \"*create*\"",
+    "valid": true
+  },
+  {
+    "source": "real:endgameinc/eqllib",
+    "name": "real_1206",
+    "query": "file where file_name == \"*Library/Preferences/*.plist\"",
+    "valid": true
+  }
+]
