@@ -41,6 +41,14 @@ func main() {
 		sigmaDir  = flag.String("sigma-corpus", "../../../sigma-parser/testdata/corpus", "directory of raw Sigma rules")
 		sigmaOut  = flag.String("sigma-out", "../../testdata/generated/eql_sigma_roundtrip_corpus.json", "Sigma round-trip corpus output")
 		sigmaFail = flag.String("sigma-failures", "../../testdata/generated/eql_sigma_roundtrip_failures.jsonl", "Sigma round-trip failures log")
+
+		rules       = flag.Bool("rules", false, "build+test the large (100k+) Sigma rule corpus")
+		rulesReal   = flag.String("rules-real", "../../testdata/generated/sigma_rules_real.jsonl", "scraped real Sigma rules JSONL")
+		rulesLib    = flag.String("rules-library", "../../../library/entries/sigma", "CraftedSignal library sigma entries dir")
+		rulesOut    = flag.String("rules-out", "../../testdata/generated/sigma_rules_100k.jsonl.gz", "combined rule corpus (gzipped JSONL)")
+		rulesEQLOut = flag.String("rules-eql-out", "../../testdata/generated/sigma_rules_translated_eql.jsonl.gz", "translated-EQL corpus output (gzipped JSONL)")
+		rulesTarget = flag.Int("rules-target", 100000, "minimum total rules in the corpus")
+		rulesBuild  = flag.Bool("rules-build", true, "rebuild the corpus before testing")
 	)
 	flag.Parse()
 
@@ -51,6 +59,16 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("Sigma->EQL field translation pass rate: %.2f%%\n", rate)
+		return
+	}
+
+	if *rules {
+		rate, err := runRulesCorpus(*rulesReal, *rulesLib, *rulesOut, *rulesEQLOut, *rulesTarget, *seed, *rulesBuild)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "rules corpus:", err)
+			os.Exit(1)
+		}
+		fmt.Printf("100k+ rule corpus pass rate: %.2f%%\n", rate)
 		return
 	}
 

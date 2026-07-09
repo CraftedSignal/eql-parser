@@ -135,6 +135,13 @@ loss in both directions** — constructs with no faithful cross-dialect form
 values) are explicitly classified, never silently mistranslated. Regenerate
 with `make sigma-corpus`.
 
+At larger scale, a **100,000-rule corpus** — ~46k real Sigma rules scraped from
+68 GitHub repositories plus the CraftedSignal library, deduped, combined with
+generated complex rules — runs through parse → translate → round-trip with
+**zero panics and 100% round-trip fidelity** on every field-translatable rule.
+The translated EQL (~94k queries) is committed and re-parsed by the core test
+suite. Build with `make rules-corpus`.
+
 ## Testing
 
 ```bash

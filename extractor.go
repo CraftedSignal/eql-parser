@@ -728,6 +728,16 @@ func mirrorOp(op string) string {
 	}
 }
 
+// mergeableOperators are operators for which `f OP a OR f OP b` is equivalent
+// to a membership test over {a, b}, so OR-runs can fold into Alternatives.
+// Ordering comparisons (<, <=, >, >=) are deliberately excluded: `f > a OR
+// f > b` is not a membership test, and folding it would drop a bound.
+var mergeableOperators = map[string]bool{
+	"==": true, ":": true, "in": true, "like": true, "regex": true,
+	"wildcard": true, "cidrMatch": true, "startsWith": true, "endsWith": true,
+	"stringContains": true, "match": true,
+}
+
 // mergeOrAlternatives folds runs of OR-connected conditions on the same
 // field/operator into a single condition with Alternatives, mirroring the
 // other parsers' behavior for `f == "a" or f == "b"`.
@@ -740,6 +750,7 @@ func mergeOrAlternatives(conds []Condition) []Condition {
 		if len(out) > 0 {
 			prev := &out[len(out)-1]
 			if c.LogicalOp == "OR" &&
+				mergeableOperators[c.Operator] &&
 				c.Field == prev.Field &&
 				c.Operator == prev.Operator &&
 				c.Negated == prev.Negated &&

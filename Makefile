@@ -1,4 +1,4 @@
-.PHONY: all test lint fmt clean benchmark coverage fuzz corpus sigma-corpus
+.PHONY: all test lint fmt clean benchmark coverage fuzz corpus sigma-corpus rules-corpus
 
 all: test
 
@@ -40,3 +40,11 @@ corpus:
 # in the sibling sigma-parser module. Requires ../sigma-parser to be present.
 sigma-corpus:
 	cd cmd/generated-corpus && go run . -sigma-roundtrip
+
+# Build + test the 100k+ Sigma rule corpus (scraped GitHub rules + the
+# CraftedSignal library + generated complex rules), running each through
+# parse -> Sigma->EQL translate -> round-trip. Emits the committed rule corpus
+# and the translated-EQL corpus. Requires ../sigma-parser (and, for real rules,
+# a scraped testdata/generated/sigma_rules_real.jsonl and ../library).
+rules-corpus:
+	cd cmd/generated-corpus && go run . -rules -rules-target $(if $(RULES),$(RULES),100000)

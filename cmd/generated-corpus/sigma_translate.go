@@ -378,7 +378,10 @@ func canonFromSigma(c sigma.Condition) []canonCond {
 	case "=", "":
 		return wildcardCanon(c.Field, values, c.Negated, ci)
 	case "contains", "startswith", "endswith":
-		op = strings.ToLower(c.Operator)
+		// Build the full wildcard pattern the modifier implies and analyze it
+		// uniformly, so a value carrying its own wildcards (endswith '\wmi*')
+		// or an empty value (contains '') canonicalizes like the EQL side.
+		return patternCanon(c.Field, strings.ToLower(c.Operator), values, c.Negated, ci)
 	case "matches":
 		op = "matches"
 	case "cidrmatch":
@@ -432,11 +435,11 @@ func canonFromEQL(c eql.Condition) []canonCond {
 	case "cidrMatch", "cidrmatch":
 		return valueCanon(c.Field, "cidrmatch", values, c.Negated, ci)
 	case "startsWith":
-		return valueCanon(c.Field, "startswith", values, c.Negated, ci)
+		return patternCanon(c.Field, "startswith", values, c.Negated, ci)
 	case "endsWith":
-		return valueCanon(c.Field, "endswith", values, c.Negated, ci)
+		return patternCanon(c.Field, "endswith", values, c.Negated, ci)
 	case "stringContains":
-		return valueCanon(c.Field, "contains", values, c.Negated, ci)
+		return patternCanon(c.Field, "contains", values, c.Negated, ci)
 	case ">":
 		return valueCanon(c.Field, "gt", values, c.Negated, ci)
 	case ">=":
@@ -504,6 +507,27 @@ func wildcardCanon(field string, values []string, negated, ci bool) []canonCond 
 		out = append(out, canonCond{Field: lc(field), Op: op, Value: canonValue(body, ci), Negated: negated, CI: ci})
 	}
 	return out
+}
+
+// patternCanon canonicalizes a positional string match (contains / startswith
+// / endswith) by materializing the full wildcard pattern the operator implies
+// and running it through wildcardCanon, so values that carry their own
+// wildcards or are empty collapse to the same shape on both dialects.
+func patternCanon(field, op string, values []string, negated, ci bool) []canonCond {
+	patterns := make([]string, len(values))
+	for i, v := range values {
+		switch op {
+		case "contains":
+			patterns[i] = "*" + v + "*"
+		case "startswith":
+			patterns[i] = v + "*"
+		case "endswith":
+			patterns[i] = "*" + v
+		default:
+			patterns[i] = v
+		}
+	}
+	return wildcardCanon(field, patterns, negated, ci)
 }
 
 func valueCanon(field, op string, values []string, negated, ci bool) []canonCond {

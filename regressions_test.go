@@ -2,6 +2,33 @@ package eql
 
 import "testing"
 
+// Ordering comparisons on the same field across an OR must NOT fold into a
+// single alternatives condition: `f > a OR f > b` is not a membership test,
+// and folding it drops a bound. Found by the 100k Sigma-rule round-trip
+// corpus (this bug also existed in sigma-parser's groupORConditions).
+func TestRegressionComparisonsDoNotMerge(t *testing.T) {
+	res := ExtractConditions(`any where port > 20067 or port > 14362`)
+	requireNoErrors(t, res)
+	if len(res.Conditions) != 2 {
+		t.Fatalf("expected 2 separate conditions, got %d: %+v", len(res.Conditions), res.Conditions)
+	}
+	if res.Conditions[0].Value != "20067" || res.Conditions[1].Value != "14362" {
+		t.Errorf("values = %q, %q", res.Conditions[0].Value, res.Conditions[1].Value)
+	}
+	for _, c := range res.Conditions {
+		if len(c.Alternatives) != 0 {
+			t.Errorf("comparison must not gain alternatives: %+v", c)
+		}
+	}
+
+	// Equality on the same field across an OR still merges into alternatives.
+	eq := ExtractConditions(`any where name == "a" or name == "b"`)
+	requireNoErrors(t, eq)
+	if len(eq.Conditions) != 1 || len(eq.Conditions[0].Alternatives) != 2 {
+		t.Errorf("equality should still merge: %+v", eq.Conditions)
+	}
+}
+
 // Regression tests for bugs surfaced by the real detection-rule corpus
 // (testdata/real_eql_corpus.jsonl). Each corresponds to a query pattern that
 // appears in production Elastic Security rules.

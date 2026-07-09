@@ -36,3 +36,6 @@ coverage.out
 cmd/generated-corpus/generated-corpus
 # Sigma round-trip debug log (regenerated; test tolerates absence)
 testdata/generated/*_failures.jsonl
+
+# Raw scraped rules (regenerable input; the deduped 100k .gz is the committed artifact)
+testdata/generated/sigma_rules_real.jsonl
