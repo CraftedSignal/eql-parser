@@ -19,6 +19,7 @@ type realCorpusEntry struct {
 
 func loadRealCorpus(t testing.TB) []realCorpusEntry {
 	t.Helper()
+	skipIfLFSPointer(t, realCorpusPath)
 	f, err := os.Open(realCorpusPath)
 	if err != nil {
 		if os.IsNotExist(err) {

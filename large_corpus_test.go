@@ -31,6 +31,7 @@ type largeCorpusEntry struct {
 // .jsonl if that is what exists. Returns the number of entries seen.
 func streamLargeCorpus(t testing.TB, fn func(largeCorpusEntry)) int {
 	t.Helper()
+	skipIfLFSPointer(t, largeCorpusPath)
 	var r io.Reader
 	if f, err := os.Open(largeCorpusPath); err == nil {
 		defer f.Close()

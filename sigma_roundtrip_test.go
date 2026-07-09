@@ -25,6 +25,7 @@ type sigmaRoundTripEntry struct {
 }
 
 func TestSigmaRoundTripCorpus(t *testing.T) {
+	skipIfLFSPointer(t, sigmaRoundTripPath)
 	data, err := os.ReadFile(sigmaRoundTripPath)
 	if err != nil {
 		if os.IsNotExist(err) {

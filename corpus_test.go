@@ -101,6 +101,7 @@ func TestCorpus(t *testing.T) {
 // conditions.
 func TestGeneratedCorpus(t *testing.T) {
 	const path = "testdata/generated/eql_generated_corpus.json"
+	skipIfLFSPointer(t, path)
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
