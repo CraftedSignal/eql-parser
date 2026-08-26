@@ -26,7 +26,7 @@ smaller language and can be a later module if needed.
 
 ## Decisions
 
-1. **Standalone module** `github.com/craftedsignal/eql-parser`, package `eql`, MIT, zero
+1. **Standalone module** `github.com/craftedsignal/eql-parser`, package `eql`, AGPL-3.0, zero
    dependencies — mirrors kql-parser/leql-parser/spl-parser (module layout, extractor API,
    test-suite shape) and sigma-parser (hand-written parsing).
 2. **Hand-written lexer + recursive-descent parser** (not ANTLR). ANTLR toolchain (Java) is

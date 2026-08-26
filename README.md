@@ -2,7 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/craftedsignal/eql-parser.svg)](https://pkg.go.dev/github.com/craftedsignal/eql-parser)
 [![Go Report Card](https://goreportcard.com/badge/github.com/craftedsignal/eql-parser)](https://goreportcard.com/report/github.com/craftedsignal/eql-parser)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 
 A production-ready Go parser for **EQL (Event Query Language)**, the correlation
 language used by Elastic Security detection rules. It extracts conditions,
@@ -182,4 +182,4 @@ extracting everything it can — extraction is best-effort by design.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+AGPL-3.0 — see [LICENSE](LICENSE).
