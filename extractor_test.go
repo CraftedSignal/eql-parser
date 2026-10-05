@@ -178,6 +178,48 @@ func TestExtractInList(t *testing.T) {
 	}
 }
 
+func TestExtractSameFieldOrMergesAlternatives(t *testing.T) {
+	res := ExtractConditions(`process where process.name == "cmd.exe" or process.name == "powershell.exe"`)
+	requireNoErrors(t, res)
+	if len(res.Conditions) != 1 {
+		t.Fatalf("conditions = %d, want 1 (errors: %v): %#v", len(res.Conditions), res.Errors, res.Conditions)
+	}
+	c := res.Conditions[0]
+	if c.Field != "process.name" || c.Operator != "==" {
+		t.Fatalf("condition = %#v, want process.name equality", c)
+	}
+	if len(c.Alternatives) != 2 || c.Alternatives[0] != "cmd.exe" || c.Alternatives[1] != "powershell.exe" {
+		t.Fatalf("Alternatives = %v, want [cmd.exe powershell.exe]", c.Alternatives)
+	}
+}
+
+func TestExtractOrAcrossAndBranchesDoesNotMergeAlternatives(t *testing.T) {
+	res := ExtractConditions(`process where ((process.executable : "*\\cmd.exe" and process.command_line : "*whoami*") or (process.command_line : "*hostname*" and process.executable : "*\\powershell.exe"))`)
+	requireNoErrors(t, res)
+	if len(res.Conditions) != 4 {
+		t.Fatalf("conditions = %d, want 4 (errors: %v): %#v", len(res.Conditions), res.Errors, res.Conditions)
+	}
+	for i, c := range res.Conditions {
+		if len(c.Alternatives) > 0 {
+			t.Fatalf("condition[%d] unexpectedly merged alternatives: %#v", i, c)
+		}
+	}
+	if res.Conditions[0].Field != "process.executable" ||
+		res.Conditions[1].Field != "process.command_line" ||
+		res.Conditions[2].Field != "process.command_line" ||
+		res.Conditions[3].Field != "process.executable" {
+		t.Fatalf("condition fields = %#v, want executable/command_line/command_line/executable", res.Conditions)
+	}
+	if res.Conditions[1].LogicalOp != "AND" || res.Conditions[2].LogicalOp != "OR" || res.Conditions[3].LogicalOp != "AND" {
+		t.Fatalf("logical ops = [%q %q %q %q], want [\"\" \"AND\" \"OR\" \"AND\"]",
+			res.Conditions[0].LogicalOp,
+			res.Conditions[1].LogicalOp,
+			res.Conditions[2].LogicalOp,
+			res.Conditions[3].LogicalOp,
+		)
+	}
+}
+
 func TestExtractNotIn(t *testing.T) {
 	res := ExtractConditions(`process where process.name not in ("a", "b")`)
 	requireNoErrors(t, res)

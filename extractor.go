@@ -64,14 +64,15 @@ type PipeInfo struct {
 
 // ParseResult contains everything extracted from a query.
 type ParseResult struct {
-	Conditions      []Condition   `json:"conditions"`
-	EventCategories []string      `json:"event_categories,omitempty"` // unique categories in source order
-	Sequence        *SequenceInfo `json:"sequence,omitempty"`         // set for sequence/join/sample queries
-	Pipes           []PipeInfo    `json:"pipes,omitempty"`
-	Commands        []string      `json:"commands,omitempty"`  // construct kind + pipe names, in order
-	Fields          []string      `json:"fields,omitempty"`    // every field referenced anywhere (source order, deduped)
-	JoinKeys        []string      `json:"join_keys,omitempty"` // every by-clause field (global + per-step)
-	Errors          []string      `json:"errors,omitempty"`
+	Conditions      []Condition          `json:"conditions"`
+	Expression      *ConditionExpression `json:"expression,omitempty"`
+	EventCategories []string             `json:"event_categories,omitempty"` // unique categories in source order
+	Sequence        *SequenceInfo        `json:"sequence,omitempty"`         // set for sequence/join/sample queries
+	Pipes           []PipeInfo           `json:"pipes,omitempty"`
+	Commands        []string             `json:"commands,omitempty"`  // construct kind + pipe names, in order
+	Fields          []string             `json:"fields,omitempty"`    // every field referenced anywhere (source order, deduped)
+	JoinKeys        []string             `json:"join_keys,omitempty"` // every by-clause field (global + per-step)
+	Errors          []string             `json:"errors,omitempty"`
 }
 
 // FieldUsage classifies how a field participates in a query.
@@ -139,7 +140,10 @@ func extractConditions(query string) *ParseResult {
 
 	ex := newExtractor(res)
 	ex.extractQuery(ast)
-	res.Conditions = mergeOrAlternatives(res.Conditions)
+	rawConditions := append([]Condition(nil), res.Conditions...)
+	var conditionIndexMap []int
+	res.Conditions, conditionIndexMap = mergeOrAlternativesWithIndexMap(res.Conditions)
+	res.Expression = remapConditionExpression(buildConditionExpression(ast, rawConditions), conditionIndexMap)
 	return res
 }
 
@@ -742,40 +746,93 @@ var mergeableOperators = map[string]bool{
 // field/operator into a single condition with Alternatives, mirroring the
 // other parsers' behavior for `f == "a" or f == "b"`.
 func mergeOrAlternatives(conds []Condition) []Condition {
+	merged, _ := mergeOrAlternativesWithIndexMap(conds)
+	return merged
+}
+
+func mergeOrAlternativesWithIndexMap(conds []Condition) ([]Condition, []int) {
 	if len(conds) < 2 {
-		return conds
+		return conds, nil
 	}
 	out := make([]Condition, 0, len(conds))
-	for _, c := range conds {
-		if len(out) > 0 {
-			prev := &out[len(out)-1]
-			if c.LogicalOp == "OR" &&
-				mergeableOperators[c.Operator] &&
-				c.Field == prev.Field &&
-				c.Operator == prev.Operator &&
-				c.Negated == prev.Negated &&
-				c.CaseInsensitive == prev.CaseInsensitive &&
-				c.Function == prev.Function &&
-				c.EventCategory == prev.EventCategory &&
-				c.SequenceStep == prev.SequenceStep &&
-				c.PipeStage == prev.PipeStage &&
-				c.FromUntil == prev.FromUntil &&
-				c.Lineage == prev.Lineage &&
-				!c.ValueIsField && !prev.ValueIsField {
-				if len(prev.Alternatives) == 0 {
-					prev.Alternatives = []string{prev.Value}
+	indexMap := make([]int, len(conds))
+	for i := range indexMap {
+		indexMap[i] = -1
+	}
+	for i := 0; i < len(conds); i++ {
+		c := conds[i]
+		if i+1 < len(conds) && canMergeConditionAlternative(c, conds[i+1]) && canMergeAlternativeGroup(conds, i) {
+			alternatives := conditionAlternatives(c)
+			j := i + 1
+			for j < len(conds) && canMergeConditionAlternative(c, conds[j]) {
+				alternatives = append(alternatives, conditionAlternatives(conds[j])...)
+				j++
+			}
+			if len(alternatives) > 1 {
+				c.Alternatives = deduplicateConditionValues(alternatives)
+				mergedIndex := len(out)
+				out = append(out, c)
+				for rawIndex := i; rawIndex < j; rawIndex++ {
+					indexMap[rawIndex] = mergedIndex
 				}
-				if len(c.Alternatives) > 0 {
-					prev.Alternatives = append(prev.Alternatives, c.Alternatives...)
-				} else {
-					prev.Alternatives = append(prev.Alternatives, c.Value)
+				if j < len(conds) && strings.EqualFold(conds[j].LogicalOp, "OR") {
+					conds[j].LogicalOp = "AND"
 				}
+				i = j - 1
 				continue
 			}
 		}
+		indexMap[i] = len(out)
 		out = append(out, c)
 	}
-	return out
+	return out, indexMap
+}
+
+func canMergeAlternativeGroup(conds []Condition, index int) bool {
+	if index == 0 || strings.EqualFold(conds[index].LogicalOp, "OR") {
+		return true
+	}
+	j := index + 1
+	for j < len(conds) && canMergeConditionAlternative(conds[index], conds[j]) {
+		j++
+	}
+	return j == len(conds) || strings.EqualFold(conds[j].LogicalOp, "OR")
+}
+
+func canMergeConditionAlternative(a, b Condition) bool {
+	return strings.EqualFold(b.LogicalOp, "OR") &&
+		mergeableOperators[b.Operator] &&
+		a.Field == b.Field &&
+		a.Operator == b.Operator &&
+		!a.Negated &&
+		!b.Negated &&
+		a.CaseInsensitive == b.CaseInsensitive &&
+		a.Function == b.Function &&
+		a.EventCategory == b.EventCategory &&
+		a.SequenceStep == b.SequenceStep &&
+		a.PipeStage == b.PipeStage &&
+		a.FromUntil == b.FromUntil &&
+		a.Lineage == b.Lineage &&
+		!a.ValueIsField && !b.ValueIsField
+}
+
+func conditionAlternatives(cond Condition) []string {
+	if len(cond.Alternatives) > 0 {
+		return append([]string(nil), cond.Alternatives...)
+	}
+	return []string{cond.Value}
+}
+
+func deduplicateConditionValues(values []string) []string {
+	seen := make(map[string]bool, len(values))
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		if !seen[value] {
+			seen[value] = true
+			result = append(result, value)
+		}
+	}
+	return result
 }
 
 // FieldProvenance indicates where a field originates relative to a query's
