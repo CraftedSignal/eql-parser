@@ -698,6 +698,15 @@ func TestNormalizeSmartQuotes(t *testing.T) {
 	requireConditions(t, res, `process.name == cmd.exe`)
 }
 
+// Typographic characters are fixed only outside string literals: an en dash
+// inside a value is a different character to match (a Windows flag variant).
+func TestNormalizeKeepsTypographicCharactersInsideStrings(t *testing.T) {
+	query := "process where process.command_line : \"* \u2013enc *\" and process.name == \u201ccmd.exe\u201d"
+	if got := NormalizeQuery(query); got != "process where process.command_line : \"* \u2013enc *\" and process.name == \"cmd.exe\"" {
+		t.Fatalf("NormalizeQuery = %q", got)
+	}
+}
+
 func TestNormalizeCodeFence(t *testing.T) {
 	res := ExtractConditions("```eql\nprocess where process.name == \"cmd.exe\"\n```")
 	requireNoErrors(t, res)

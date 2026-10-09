@@ -14,19 +14,10 @@ func NormalizeQuery(query string) string {
 	// Strip UTF-8 BOM.
 	q = strings.TrimPrefix(q, "\ufeff")
 
-	// Replace typographic characters that word processors substitute. These
-	// are done globally: curly quotes inside legitimate string values are
-	// far rarer than curly quotes produced by pasting a whole query through
-	// a rich-text editor.
-	replacer := strings.NewReplacer(
-		"\u201c", `"`, "\u201d", `"`, "\u201e", `"`, "\u201f", `"`, // curly double quotes
-		"\u2018", `'`, "\u2019", `'`, "\u201a", `'`, "\u201b", `'`, // curly single quotes
-		"\u00ab", `"`, "\u00bb", `"`, // guillemets
-		"\u2013", "-", "\u2014", "-", "\u2212", "-", // en/em dash, minus sign
-		"\u200b", "", "\u200c", "", "\u200d", "", "\ufeff", "", "\u2060", "", // zero-width chars
-		"\u00a0", " ", "\u202f", " ", "\u2007", " ", // non-breaking spaces
-	)
-	q = replacer.Replace(q)
+	// Replace typographic characters that word processors substitute, but
+	// only outside string literals: a value may hold an en dash (a Windows
+	// flag variant) or a curly quote that it must match as written.
+	q = outsideStringLiterals(q, typographicReplacer.Replace)
 
 	// Strip markdown code fences: ```eql ... ``` or ``` ... ```.
 	q = stripCodeFences(q)
@@ -144,4 +135,34 @@ func scanStringEnd(q string, i int) int {
 		j++
 	}
 	return len(q)
+}
+
+var typographicReplacer = strings.NewReplacer(
+	"\u201c", `"`, "\u201d", `"`, "\u201e", `"`, "\u201f", `"`, // curly double quotes
+	"\u2018", `'`, "\u2019", `'`, "\u201a", `'`, "\u201b", `'`, // curly single quotes
+	"\u00ab", `"`, "\u00bb", `"`, // guillemets
+	"\u2013", "-", "\u2014", "-", "\u2212", "-", // en/em dash, minus sign
+	"\u200b", "", "\u200c", "", "\u200d", "", "\ufeff", "", "\u2060", "", // zero-width chars
+	"\u00a0", " ", "\u202f", " ", "\u2007", " ", // non-breaking spaces
+)
+
+// outsideStringLiterals applies fix to the query text between string
+// literals and keeps the literals as written. A curly quote that fix turns
+// into a straight quote then opens or closes a literal as usual.
+func outsideStringLiterals(q string, fix func(string) string) string {
+	var b strings.Builder
+	b.Grow(len(q))
+	start := 0
+	for i := 0; i < len(q); {
+		if q[i] != '"' && q[i] != '\'' {
+			i++
+			continue
+		}
+		b.WriteString(fix(q[start:i]))
+		end := scanStringEnd(q, i)
+		b.WriteString(q[i:end])
+		start, i = end, end
+	}
+	b.WriteString(fix(q[start:]))
+	return b.String()
 }
