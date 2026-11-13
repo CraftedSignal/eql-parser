@@ -878,7 +878,7 @@ func ClassifyFieldProvenance(r *ParseResult, field string) FieldProvenance {
 	inMain, inJoined := false, false
 	present := isJoinKey
 	for _, c := range r.Conditions {
-		if c.Field != field && !(c.ValueIsField && c.Value == field) && !contains(c.CoFields, field) {
+		if c.Field != field && (!c.ValueIsField || c.Value != field) && !contains(c.CoFields, field) {
 			continue
 		}
 		present = true
@@ -1126,7 +1126,7 @@ func ClassifyFieldUsage(r *ParseResult, field string) FieldUsage {
 	}
 	stepSeen := map[int]struct{}{}
 	for _, c := range r.Conditions {
-		if c.Field != field && !(c.ValueIsField && c.Value == field) {
+		if c.Field != field && (!c.ValueIsField || c.Value != field) {
 			continue
 		}
 		if c.PipeStage > 0 {

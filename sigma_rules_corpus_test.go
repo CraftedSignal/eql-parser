@@ -32,12 +32,20 @@ func TestSigmaTranslatedEQLCorpus(t *testing.T) {
 		}
 		t.Fatalf("open: %v", err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			t.Errorf("close corpus: %v", err)
+		}
+	}()
 	gz, err := gzip.NewReader(f)
 	if err != nil {
 		t.Fatalf("gzip: %v", err)
 	}
-	defer gz.Close()
+	defer func() {
+		if err := gz.Close(); err != nil {
+			t.Errorf("close corpus: %v", err)
+		}
+	}()
 
 	type entry struct {
 		Query string `json:"query"`
