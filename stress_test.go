@@ -179,7 +179,7 @@ func genStressSequence(rng *rand.Rand) string {
 		b.WriteString(" by " + pick(rng, stressFields))
 	}
 	if kind == "sequence" && rng.Intn(2) == 0 {
-		b.WriteString(fmt.Sprintf(" with maxspan=%d%s", 1+rng.Intn(60), pick(rng, []string{"s", "m", "h", "d"})))
+		fmt.Fprintf(&b, " with maxspan=%d%s", 1+rng.Intn(60), pick(rng, []string{"s", "m", "h", "d"}))
 	}
 	n := 2 + rng.Intn(3)
 	for i := 0; i < n; i++ {
@@ -195,7 +195,7 @@ func genStressSequence(rng *rand.Rand) string {
 			b.WriteString(" by " + pick(rng, stressFields))
 		}
 		if kind == "sequence" && !missing && rng.Intn(6) == 0 {
-			b.WriteString(fmt.Sprintf(" with runs=%d", 1+rng.Intn(100)))
+			fmt.Fprintf(&b, " with runs=%d", 1+rng.Intn(100))
 		}
 	}
 	if kind != "sample" && rng.Intn(4) == 0 {
@@ -210,9 +210,9 @@ func genStressPipes(rng *rand.Rand) string {
 	for i := 0; i < n; i++ {
 		switch rng.Intn(6) {
 		case 0:
-			b.WriteString(fmt.Sprintf(" | head %d", rng.Intn(1000)))
+			fmt.Fprintf(&b, " | head %d", rng.Intn(1000))
 		case 1:
-			b.WriteString(fmt.Sprintf(" | tail %d", rng.Intn(1000)))
+			fmt.Fprintf(&b, " | tail %d", rng.Intn(1000))
 		case 2:
 			b.WriteString(" | unique " + pick(rng, stressFields))
 		case 3:

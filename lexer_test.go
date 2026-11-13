@@ -245,7 +245,7 @@ func TestLexMultibyteInString(t *testing.T) {
 		{`"café"`, "café"},
 		{`"日本語"`, "日本語"},
 		{`"emoji😀here"`, "emoji😀here"},
-		{`"rtl‮override"`, "rtl‮override"},
+		{"\"rtl\u202eoverride\"", "rtl\u202eoverride"},
 		{"`fïeld`", "fïeld"},
 	}
 	for _, tt := range tests {

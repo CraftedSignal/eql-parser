@@ -33,15 +33,6 @@ func hasCond(r *ParseResult, field, op string) bool {
 	return false
 }
 
-func hasField(r *ParseResult, field string) bool {
-	for _, f := range r.Fields {
-		if f == field {
-			return true
-		}
-	}
-	return false
-}
-
 func condValues(r *ParseResult, field string) []string {
 	for _, c := range r.Conditions {
 		if c.Field == field {
