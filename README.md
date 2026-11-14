@@ -162,11 +162,20 @@ suite. Build with `make rules-corpus`.
 ## Testing
 
 ```bash
-make test        # go test -race ./...
+make test        # full suite with coverage, then short suite with race detection
 make fuzz        # native Go fuzzing (FuzzExtractConditions, FuzzParse)
 make corpus      # regenerate the differential test corpus
 make benchmark   # lexer / parser / extractor benchmarks
 ```
+
+CI and `make test` run `go test -v -count=1 -timeout=10m -coverprofile=coverage.out ./...`
+followed by `go test -short -race -count=1 -timeout=5m ./...`. The full run
+retains every corpus and stress test and produces the coverage report. The
+short race run includes a bounded concurrent test of parsing, extraction,
+semantic analysis, and cancellation/resource-failure isolation. Separating the
+runs avoids the combined cost of race detection and atomic coverage on the
+large corpora. CI checks out the corpus files with Git LFS and uploads
+`coverage.out` to Codecov.
 
 The suite includes unit tests for the lexer, parser, and extractor; a
 round-trip property test (`parse → render → parse` is a fixpoint); the full
@@ -175,7 +184,7 @@ all parsing cleanly; a curated valid/adversarial corpus; bounded-AST
 differential testing with an independent oracle; a **500,000-query** generated
 corpus (0 panics, 100% parse rate at scale); a Sigma ↔ EQL round-trip corpus;
 native fuzzing (millions of executions); and a 100k-iteration structured stress
-test plus ~200k adversarial mutation runs — all with zero panics, at **100%
+test plus ~200k adversarial mutation runs — all with zero panics, at **99.9%
 statement coverage**.
 
 ## Dialect notes
