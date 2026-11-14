@@ -76,6 +76,7 @@ type ParseResult struct {
 	Fields          []string             `json:"fields,omitempty"`    // every field referenced anywhere (source order, deduped)
 	JoinKeys        []string             `json:"join_keys,omitempty"` // every by-clause field (global + per-step)
 	Errors          []string             `json:"errors,omitempty"`
+	astExpression   bool
 }
 
 // FieldUsage classifies how a field participates in a query.
@@ -129,10 +130,12 @@ func extractWithBudget(query string, budget *parseBudget) (res *ParseResult) {
 	res.Errors = errs
 	ex := newExtractorWithBudget(res, budget)
 	ex.extractQuery(ast)
-	rawConditions := append([]Condition(nil), res.Conditions...)
+	rawConditions := res.Conditions
+	res.astExpression = ast != nil
+	rawExpression := buildConditionExpressionWithBudget(ast, rawConditions, budget, ex.leaves)
 	var conditionIndexMap []int
 	res.Conditions, conditionIndexMap = mergeOrAlternativesWithIndexMapBudget(res.Conditions, budget, ex.mergeGroups)
-	res.Expression = remapConditionExpressionWithBudget(buildConditionExpressionWithBudget(ast, rawConditions, budget), conditionIndexMap, budget)
+	res.Expression = remapConditionExpressionWithBudget(rawExpression, conditionIndexMap, budget)
 	budget.check(0)
 	return res
 }
@@ -168,7 +171,11 @@ func extractSubqueryWithBudget(e *EventQuery, budget *parseBudget) *ParseResult 
 	}
 	ex := newExtractorWithBudget(sub, budget)
 	ex.enterEventQuery(e, 0, false, false, "")
-	sub.Conditions, _ = mergeOrAlternativesWithIndexMapBudget(sub.Conditions, budget, ex.mergeGroups)
+	sub.astExpression = true
+	rawExpression := buildConditionExpressionWithBudget(&Query{Body: e}, sub.Conditions, budget, ex.leaves)
+	var indexMap []int
+	sub.Conditions, indexMap = mergeOrAlternativesWithIndexMapBudget(sub.Conditions, budget, ex.mergeGroups)
+	sub.Expression = remapConditionExpressionWithBudget(rawExpression, indexMap, budget)
 	return sub
 }
 

@@ -23,6 +23,7 @@ type SemanticExpression struct {
 	Operator  BooleanOperator       `json:"operator"`
 	Condition *Condition            `json:"condition,omitempty"`
 	Children  []*SemanticExpression `json:"children,omitempty"`
+	Scalar    *ScalarPredicate      `json:"scalar,omitempty"`
 }
 
 // SemanticSequence is the parser-owned semantic view of EQL sequence, join,
@@ -93,7 +94,7 @@ func semanticFromExtractionWithBudget(result *ParseResult, budget *parseBudget) 
 		Errors:          cloneSemanticStringsWithBudget(result.Errors, budget),
 	}
 	semantic.Expression = semanticExpressionFromParseExpressionWithBudget(result.Expression, semantic.Conditions, budget)
-	if semantic.Expression == nil {
+	if semantic.Expression == nil && (!result.astExpression || result.Sequence != nil) {
 		semantic.Expression = semanticExpressionFromConditionsWithBudget(semantic.Conditions, budget)
 	}
 	return semantic
@@ -117,6 +118,13 @@ func semanticExpressionFromParseExpressionWithBudget(expression *ConditionExpres
 			Operator:  BooleanCondition,
 			Condition: &conditions[expression.ConditionIndex],
 		}
+	case BooleanScalar:
+		if expression.Scalar == nil {
+			return nil
+		}
+		budget.addOutput(len(expression.Scalar.Syntax))
+		scalar := *expression.Scalar
+		return &SemanticExpression{Operator: BooleanScalar, Scalar: &scalar}
 	case BooleanAnd, BooleanOr:
 		converted := &SemanticExpression{Operator: expression.Operator}
 		for _, child := range expression.Children {

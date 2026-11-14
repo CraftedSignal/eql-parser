@@ -131,6 +131,15 @@ tree. Ordinary syntax errors still support best-effort extraction.
 
 `ParseResult` carries `Conditions`, `EventCategories`, `Sequence`, `Pipes`,
 `Commands`, `Fields`, `JoinKeys` (also via `GroupByFields()`), and `Errors`.
+`Conditions` is a flat, best-effort field projection. For event filters, use
+`Expression` as the complete boolean tree: a `condition` leaf refers to a
+condition index, while a `scalar` leaf carries canonical EQL syntax and any
+enclosing NOT parity. A scalar can represent a constant, a field-free
+predicate, or a computed/function predicate. Consumers must preserve it or
+explicitly reject it; dropping it or treating it as true changes the filter.
+The corresponding `SemanticQuery.Expression` carries owned condition and
+scalar leaves. Scalar syntax is canonical rendering, not the original source
+substring or an evaluated truth value.
 Each `Condition` records the `Field`, `Operator`, `Value`, `Negated`,
 `CaseInsensitive`, `LogicalOp`, `Alternatives`, `EventCategory`,
 `SequenceStep`, `FromUntil`, `FromMissing`, `PipeStage`, `IsOptional`,
@@ -138,6 +147,10 @@ Each `Condition` records the `Field`, `Operator`, `Value`, `Negated`,
 steps additionally expose a recursive `Subquery *ParseResult` — a
 self-contained extraction of that correlation term, the EQL analog of a join
 subsearch.
+
+Parsing is intentionally permissive: field-to-field comparisons such as
+`x == y` can be represented locally, although modern Elasticsearch EQL does
+not support them. Parser acceptance alone does not establish service support.
 
 ## Sigma interoperability
 
