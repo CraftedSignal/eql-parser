@@ -899,11 +899,14 @@ func safeAlternativeTree(e Expr, budget *parseBudget) bool {
 		if !mergeableOperators[v.Op] {
 			return false
 		}
-		_, lf := unwrap(v.L).(*Field)
-		_, rf := unwrap(v.R).(*Field)
+		left, leftField := unwrap(v.L).(*Field)
+		right, rightField := unwrap(v.R).(*Field)
+		lf := leftField && flatFieldIdentity(left, budget)
+		rf := rightField && flatFieldIdentity(right, budget)
 		return lf && literalOperand(v.R) || rf && literalOperand(v.L)
 	case *InExpr:
-		if _, ok := unwrap(v.X).(*Field); !ok || v.Negated {
+		field, ok := unwrap(v.X).(*Field)
+		if !ok || !flatFieldIdentity(field, budget) || v.Negated {
 			return false
 		}
 		for _, item := range v.List {
@@ -914,7 +917,8 @@ func safeAlternativeTree(e Expr, budget *parseBudget) bool {
 		}
 		return true
 	case *PatternExpr:
-		if _, ok := unwrap(v.X).(*Field); !ok {
+		field, ok := unwrap(v.X).(*Field)
+		if !ok || !flatFieldIdentity(field, budget) {
 			return false
 		}
 		for _, item := range v.Patterns {

@@ -156,6 +156,9 @@ keeps its original notation, and a null operand has no sentinel text.
 function arguments and their order. For a safely merged OR condition, it is
 the canonical OR of its source atoms. Computed predicates remain scalar leaves
 in the complete expression even when flat extraction reports a field.
+Quoted and indexed field paths that collide after flattening also remain
+scalar leaves; their `PredicateSyntax` keeps the exact path structure. Ambiguous
+RHS field references use an expression operand with canonical EQL text.
 Older serialized conditions without `RHS` are untyped: `Value` alone does not
 establish whether `null`, `true`, or `1` was a literal or a string. These
 metadata fields are additive in JSON, but adding exported Go struct fields

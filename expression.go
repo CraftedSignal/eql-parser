@@ -123,6 +123,7 @@ func (b *eqlExpressionBuilder) expr(expr Expr, negated bool) *ConditionExpressio
 		return nil
 	}
 	syntax := canonicalExprWithBudget(atom, b.budget)
+	b.budget.addOutputExact(jsonTextBound(syntax, b.budget))
 	b.budget.node()
 	return &ConditionExpression{Operator: BooleanScalar, Scalar: &ScalarPredicate{Syntax: syntax, Negated: negated}}
 }
@@ -134,18 +135,24 @@ func faithfulConditionAtom(e Expr, budget *parseBudget) bool {
 	budget.check(1)
 	switch v := unwrap(e).(type) {
 	case *Field:
-		return true
+		return flatFieldIdentity(v, budget)
 	case *Binary:
 		switch v.Op {
 		case "==", "!=", "<", "<=", ">", ">=":
 		default:
 			return false
 		}
-		_, lf := unwrap(v.L).(*Field)
-		_, rf := unwrap(v.R).(*Field)
+		left, leftField := unwrap(v.L).(*Field)
+		right, rightField := unwrap(v.R).(*Field)
+		lf := leftField && flatFieldIdentity(left, budget)
+		rf := rightField && flatFieldIdentity(right, budget)
+		if leftField && !lf || rightField && !rf {
+			return false
+		}
 		return lf && (rf || literalOperand(v.R)) || rf && literalOperand(v.L)
 	case *InExpr:
-		if _, ok := unwrap(v.X).(*Field); !ok {
+		field, ok := unwrap(v.X).(*Field)
+		if !ok || !flatFieldIdentity(field, budget) {
 			return false
 		}
 		for _, item := range v.List {
@@ -156,7 +163,8 @@ func faithfulConditionAtom(e Expr, budget *parseBudget) bool {
 		}
 		return true
 	case *PatternExpr:
-		if _, ok := unwrap(v.X).(*Field); !ok {
+		field, ok := unwrap(v.X).(*Field)
+		if !ok || !flatFieldIdentity(field, budget) {
 			return false
 		}
 		for _, item := range v.Patterns {

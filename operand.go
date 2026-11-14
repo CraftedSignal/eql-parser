@@ -42,6 +42,9 @@ func operandFromExpr(e Expr, budget *parseBudget) *Operand {
 			return &Operand{Kind: OperandNumber, Text: v.Op + lit.Text}
 		}
 	case *Field:
+		if !flatFieldIdentity(v, budget) {
+			return &Operand{Kind: OperandExpression, Text: canonicalExprWithBudget(e, budget)}
+		}
 		return &Operand{Kind: OperandField, Text: v.Name(), Optional: v.Optional}
 	}
 	return &Operand{Kind: OperandExpression, Text: canonicalExprWithBudget(e, budget)}
@@ -49,9 +52,13 @@ func operandFromExpr(e Expr, budget *parseBudget) *Operand {
 
 func listOperand(values []Expr, budget *parseBudget) *Operand {
 	budget.check(1)
+	// Reserve every list node before allocating the full backing array.
+	for range values {
+		budget.node()
+	}
 	out := &Operand{Kind: OperandList, Items: make([]Operand, 0, len(values))}
 	for _, value := range values {
-		budget.node()
+		budget.check(1)
 		out.Items = append(out.Items, *operandFromExpr(value, budget))
 	}
 	return out
