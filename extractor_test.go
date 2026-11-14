@@ -671,7 +671,7 @@ func TestExtractEscapes(t *testing.T) {
 func TestExtractUnicodeEscape(t *testing.T) {
 	res := ExtractConditions(`file where file.name : "invoice\u{202e}fdp.exe"`)
 	requireNoErrors(t, res)
-	if res.Conditions[0].Value != "invoice‮fdp.exe" {
+	if res.Conditions[0].Value != "invoice\u202efdp.exe" {
 		t.Errorf("Value = %q", res.Conditions[0].Value)
 	}
 }
@@ -771,7 +771,7 @@ func TestExtractOversizedInput(t *testing.T) {
 }
 
 func TestExtractDeepNesting(t *testing.T) {
-	q := "process where " + strings.Repeat("(", 5000) + `a == "1"` + strings.Repeat(")", 5000)
+	q := "process where " + strings.Repeat("(", maxExprDepth+1) + `a == "1"` + strings.Repeat(")", maxExprDepth+1)
 	res := ExtractConditions(q)
 	if res == nil {
 		t.Fatal("nil result")

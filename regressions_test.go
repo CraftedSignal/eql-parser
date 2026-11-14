@@ -93,7 +93,7 @@ func TestRegressionSpaceSeparatedPipeFields(t *testing.T) {
 
 // Comma-separated field lists must still work (and mix with the space form).
 func TestRegressionCommaAndSpacePipeFields(t *testing.T) {
-	for _, q := range []string{
+	for i, q := range []string{
 		`process where true | unique a, b, c`,
 		`process where true | unique a b c`,
 		`process where true | sort x y`,
@@ -102,7 +102,8 @@ func TestRegressionCommaAndSpacePipeFields(t *testing.T) {
 		if len(res.Errors) != 0 {
 			t.Errorf("%q errored: %v", q, res.Errors)
 		}
-		if len(res.Pipes) != 1 || len(res.Pipes[0].Args) != len(res.Pipes[0].Args) {
+		wantArgs := []int{3, 3, 2}[i]
+		if len(res.Pipes) != 1 || len(res.Pipes[0].Args) != wantArgs {
 			t.Errorf("%q pipes = %+v", q, res.Pipes)
 		}
 	}

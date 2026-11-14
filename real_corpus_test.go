@@ -27,7 +27,11 @@ func loadRealCorpus(t testing.TB) []realCorpusEntry {
 		}
 		t.Fatalf("open real corpus: %v", err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			t.Errorf("close corpus: %v", err)
+		}
+	}()
 	var out []realCorpusEntry
 	sc := bufio.NewScanner(f)
 	sc.Buffer(make([]byte, 0, 64*1024), 16*1024*1024)

@@ -34,15 +34,27 @@ func streamLargeCorpus(t testing.TB, fn func(largeCorpusEntry)) int {
 	skipIfLFSPointer(t, largeCorpusPath)
 	var r io.Reader
 	if f, err := os.Open(largeCorpusPath); err == nil {
-		defer f.Close()
+		defer func() {
+			if err := f.Close(); err != nil {
+				t.Errorf("close corpus: %v", err)
+			}
+		}()
 		gz, gzErr := gzip.NewReader(f)
 		if gzErr != nil {
 			t.Fatalf("open gzip corpus: %v", gzErr)
 		}
-		defer gz.Close()
+		defer func() {
+			if err := gz.Close(); err != nil {
+				t.Errorf("close corpus: %v", err)
+			}
+		}()
 		r = gz
 	} else if f, err := os.Open(largeCorpusPathPlain); err == nil {
-		defer f.Close()
+		defer func() {
+			if err := f.Close(); err != nil {
+				t.Errorf("close corpus: %v", err)
+			}
+		}()
 		r = f
 	} else {
 		t.Skipf("large corpus not available at %s — run 'make corpus'", largeCorpusPath)

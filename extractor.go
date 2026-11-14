@@ -1,14 +1,16 @@
 package eql
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 )
 
-// MaxParseTime is the maximum time allowed for parsing a single query.
-// Queries that exceed it return an error result instead of hanging.
+// MaxParseTime supplies a cooperative deadline for extraction and semantic
+// analysis. Checks run throughout lexing, parsing, and tree traversal, and
+// before/after bounded normalization and rendering; this is not hard preemption.
 var MaxParseTime = 5 * time.Second
 
 // Condition is one field predicate extracted from an EQL query.
@@ -83,73 +85,65 @@ type FieldUsage struct {
 	InUntil   bool  `json:"in_until"`
 }
 
-// extractHook, when non-nil, is invoked at the start of the extraction
-// goroutine. It exists solely so tests can exercise the panic-recovery and
-// timeout guards (the parser itself never panics or hangs on real input).
-var extractHook func(string)
-
-// ExtractConditions parses an EQL query and extracts conditions, correlation
-// structure, pipes, and referenced fields. It never panics and never hangs:
-// hostile input yields a result whose Errors explains what went wrong.
-// Input is normalized with NormalizeQuery first.
+// ExtractConditions synchronously extracts an EQL query with a cooperative
+// MaxParseTime deadline and per-call resource limits.
+// Resource-limit or cancellation failures return no partial conditions.
 func ExtractConditions(query string) *ParseResult {
-	type outcome struct{ res *ParseResult }
-	done := make(chan outcome, 1)
-
-	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				done <- outcome{&ParseResult{
-					Conditions: []Condition{},
-					Errors:     []string{fmt.Sprintf("parser panic: %v", r)},
-				}}
-			}
-		}()
-		if extractHook != nil {
-			extractHook(query)
-		}
-		done <- outcome{extractConditions(query)}
-	}()
-
-	select {
-	case o := <-done:
-		return o.res
-	case <-time.After(MaxParseTime):
-		return &ParseResult{
-			Conditions: []Condition{},
-			Errors:     []string{fmt.Sprintf("parser timeout: query took longer than %s to parse", MaxParseTime)},
-		}
-	}
+	return ExtractConditionsContext(context.Background(), query)
 }
 
-func extractConditions(query string) *ParseResult {
-	res := &ParseResult{Conditions: []Condition{}}
+// ExtractConditionsContext supports caller cancellation. All phases share a
+// deadline and resource budget; no background parse survives the return.
+func ExtractConditionsContext(ctx context.Context, query string) *ParseResult {
+	ctx, cancel := context.WithTimeout(ctx, MaxParseTime)
+	defer cancel()
+	return extractWithBudget(query, newParseBudget(ctx))
+}
 
+func extractWithBudget(query string, budget *parseBudget) (res *ParseResult) {
+	defer func() {
+		if value := recover(); value != nil {
+			message := fmt.Sprintf("parser panic: %v", value)
+			if aborted, ok := value.(parseAbort); ok {
+				message = aborted.err.Error()
+			}
+			res = &ParseResult{Conditions: []Condition{}, Errors: []string{message}}
+		}
+	}()
+	budget.check(0)
+	res = &ParseResult{Conditions: []Condition{}}
 	if len(query) > MaxInputSize {
 		res.Errors = []string{ErrInputTooLarge.Error()}
 		return res
 	}
+	// Normalization has a fixed number of linear passes over bounded text.
+	budget.check(2 * len(query))
 	normalized := NormalizeQuery(query)
+	budget.check(0)
 	if strings.TrimSpace(normalized) == "" {
 		res.Errors = []string{ErrEmptyQuery.Error()}
 		return res
 	}
-
-	ast, errs := parseTolerant(normalized)
+	ast, errs := parseTolerantWithBudget(normalized, budget)
 	res.Errors = errs
-
-	ex := newExtractor(res)
+	ex := newExtractorWithBudget(res, budget)
 	ex.extractQuery(ast)
 	rawConditions := append([]Condition(nil), res.Conditions...)
 	var conditionIndexMap []int
-	res.Conditions, conditionIndexMap = mergeOrAlternativesWithIndexMap(res.Conditions)
-	res.Expression = remapConditionExpression(buildConditionExpression(ast, rawConditions), conditionIndexMap)
+	res.Conditions, conditionIndexMap = mergeOrAlternativesWithIndexMapBudget(res.Conditions, budget)
+	res.Expression = remapConditionExpressionWithBudget(buildConditionExpressionWithBudget(ast, rawConditions, budget), conditionIndexMap, budget)
+	budget.check(0)
 	return res
 }
 
 // newExtractor builds a walker that accumulates into res.
 func newExtractor(res *ParseResult) *extractor {
+	return newExtractorWithBudget(res, nil)
+}
+
+func newExtractorWithBudget(res *ParseResult, budget *parseBudget) *extractor {
 	return &extractor{
+		budget:    budget,
 		res:       res,
 		fieldSeen: map[string]struct{}{},
 		joinSeen:  map[string]struct{}{},
@@ -162,20 +156,25 @@ func newExtractor(res *ParseResult) *extractor {
 // (SequenceStep 0). Used to populate SequenceStepInfo.Subquery so consumers
 // can recurse into correlation terms the way they would a join subsearch.
 func extractSubquery(e *EventQuery) *ParseResult {
+	return extractSubqueryWithBudget(e, nil)
+}
+
+func extractSubqueryWithBudget(e *EventQuery, budget *parseBudget) *ParseResult {
 	sub := &ParseResult{Conditions: []Condition{}}
 	if e == nil {
 		return sub
 	}
-	ex := newExtractor(sub)
+	ex := newExtractorWithBudget(sub, budget)
 	ex.enterEventQuery(e, 0, false, false, "")
-	sub.Conditions = mergeOrAlternatives(sub.Conditions)
+	sub.Conditions, _ = mergeOrAlternativesWithIndexMapBudget(sub.Conditions, budget)
 	return sub
 }
 
 // extractor walks the AST accumulating results. Context fields describe
 // where in the query the walk currently is.
 type extractor struct {
-	res *ParseResult
+	budget *parseBudget
+	res    *ParseResult
 
 	category  string
 	step      int
@@ -192,6 +191,7 @@ type extractor struct {
 }
 
 func (ex *extractor) extractQuery(q *Query) {
+	ex.budget.check(1)
 	if q == nil {
 		return
 	}
@@ -205,10 +205,13 @@ func (ex *extractor) extractQuery(q *Query) {
 	for i, p := range q.Pipes {
 		info := PipeInfo{Name: p.Name}
 		for _, a := range p.Args {
-			info.Args = append(info.Args, ExprString(a))
+			text := ExprString(a)
+			ex.budget.addOutput(len(text))
+			info.Args = append(info.Args, text)
 			ex.collectFields(a)
 		}
 		ex.res.Pipes = append(ex.res.Pipes, info)
+		ex.budget.addOutput(len(p.Name))
 		ex.res.Commands = append(ex.res.Commands, p.Name)
 
 		if p.Name == "filter" && len(p.Args) > 0 {
@@ -225,6 +228,7 @@ func (ex *extractor) extractQuery(q *Query) {
 }
 
 func (ex *extractor) enterEventQuery(e *EventQuery, step int, fromUntil, missing bool, seedOp string) {
+	ex.budget.check(1)
 	if e == nil {
 		return
 	}
@@ -234,6 +238,7 @@ func (ex *extractor) enterEventQuery(e *EventQuery, step int, fromUntil, missing
 	}
 	if cat != "" {
 		if _, ok := ex.catSeen[cat]; !ok {
+			ex.budget.addOutput(len(cat))
 			ex.catSeen[cat] = struct{}{}
 			ex.res.EventCategories = append(ex.res.EventCategories, cat)
 		}
@@ -249,6 +254,7 @@ func (ex *extractor) enterEventQuery(e *EventQuery, step int, fromUntil, missing
 }
 
 func (ex *extractor) extractSequence(s *Sequence) {
+	ex.budget.check(1)
 	if s == nil {
 		return
 	}
@@ -256,6 +262,7 @@ func (ex *extractor) extractSequence(s *Sequence) {
 	if ms, ok := MaxSpanDuration(s.MaxSpan); ok {
 		info.MaxSpanMS = ms
 	}
+	ex.budget.addOutput(len(string(s.Kind)) + len(s.MaxSpan))
 	ex.res.Commands = append(ex.res.Commands, string(s.Kind))
 
 	for _, by := range s.By {
@@ -276,9 +283,10 @@ func (ex *extractor) extractSequence(s *Sequence) {
 		before := len(ex.res.Conditions)
 		if st.Query != nil {
 			ex.enterEventQuery(st.Query, i, false, st.Missing, "")
-			stepInfo.Subquery = extractSubquery(st.Query)
+			stepInfo.Subquery = extractSubqueryWithBudget(st.Query, ex.budget)
 		}
 		stepInfo.ConditionCount = len(ex.res.Conditions) - before
+		ex.budget.addOutput(len(stepInfo.EventCategory))
 		info.Steps = append(info.Steps, stepInfo)
 	}
 
@@ -296,7 +304,7 @@ func (ex *extractor) extractSequence(s *Sequence) {
 		before := len(ex.res.Conditions)
 		if s.Until.Query != nil {
 			ex.enterEventQuery(s.Until.Query, len(s.Steps), true, false, "")
-			untilInfo.Subquery = extractSubquery(s.Until.Query)
+			untilInfo.Subquery = extractSubqueryWithBudget(s.Until.Query, ex.budget)
 		}
 		untilInfo.ConditionCount = len(ex.res.Conditions) - before
 		info.Until = &untilInfo
@@ -308,7 +316,7 @@ func (ex *extractor) extractSequence(s *Sequence) {
 // registerJoinKey records the fields of a by-clause expression and returns
 // their names (or the rendered expression when it contains no field).
 func (ex *extractor) registerJoinKey(e Expr) []string {
-	fields := collectFieldNodes(e)
+	fields := collectFieldNodesWithBudget(e, ex.budget)
 	if len(fields) == 0 {
 		txt := ExprString(e)
 		if txt == "" {
@@ -322,6 +330,7 @@ func (ex *extractor) registerJoinKey(e Expr) []string {
 		names = append(names, name)
 		ex.addField(f)
 		if _, ok := ex.joinSeen[name]; !ok {
+			ex.budget.addOutput(len(name))
 			ex.joinSeen[name] = struct{}{}
 			ex.res.JoinKeys = append(ex.res.JoinKeys, name)
 		}
@@ -334,6 +343,7 @@ func (ex *extractor) registerJoinKey(e Expr) []string {
 // ---------------------------------------------------------------------------
 
 func (ex *extractor) walkExpr(e Expr) {
+	ex.budget.check(1)
 	switch v := e.(type) {
 	case *Binary:
 		switch v.Op {
@@ -402,8 +412,8 @@ func (ex *extractor) walkExpr(e Expr) {
 // same comparison (arithmetic operands, extra function arguments) as CoFields
 // so nothing is silently dropped from the condition-level view.
 func (ex *extractor) emitComparison(op string, l, r Expr) {
-	lf, lfn := primaryField(l)
-	rf, rfn := primaryField(r)
+	lf, lfn := primaryFieldWithBudget(l, ex.budget)
+	rf, rfn := primaryFieldWithBudget(r, ex.budget)
 
 	switch {
 	case lf != nil && rf != nil:
@@ -414,7 +424,7 @@ func (ex *extractor) emitComparison(op string, l, r Expr) {
 			ValueIsField: true,
 			IsOptional:   lf.Optional,
 			Function:     lfn,
-			CoFields:     coFields(l, r, lf.Name(), rf.Name()),
+			CoFields:     coFieldsWithBudget(l, r, lf.Name(), rf.Name(), ex.budget),
 		})
 	case lf != nil:
 		ex.emit(Condition{
@@ -423,7 +433,7 @@ func (ex *extractor) emitComparison(op string, l, r Expr) {
 			Value:      valueText(r),
 			IsOptional: lf.Optional,
 			Function:   lfn,
-			CoFields:   coFields(l, r, lf.Name(), ""),
+			CoFields:   coFieldsWithBudget(l, r, lf.Name(), "", ex.budget),
 		})
 	case rf != nil:
 		ex.emit(Condition{
@@ -432,7 +442,7 @@ func (ex *extractor) emitComparison(op string, l, r Expr) {
 			Value:      valueText(l),
 			IsOptional: rf.Optional,
 			Function:   rfn,
-			CoFields:   coFields(l, r, rf.Name(), ""),
+			CoFields:   coFieldsWithBudget(l, r, rf.Name(), "", ex.budget),
 		})
 	}
 }
@@ -440,14 +450,16 @@ func (ex *extractor) emitComparison(op string, l, r Expr) {
 // coFields returns every field referenced across both sides of a comparison
 // except the primary field and (when the RHS is itself a field) the value
 // field, in source order with duplicates removed.
-func coFields(l, r Expr, primary, value string) []string {
-	nodes := append(collectFieldNodes(l), collectFieldNodes(r)...)
+
+func coFieldsWithBudget(l, r Expr, primary, value string, budget *parseBudget) []string {
+	nodes := append(collectFieldNodesWithBudget(l, budget), collectFieldNodesWithBudget(r, budget)...)
 	var out []string
 	seen := map[string]struct{}{primary: {}}
 	if value != "" {
 		seen[value] = struct{}{}
 	}
 	for _, f := range nodes {
+		budget.check(1)
 		name := f.Name()
 		if _, ok := seen[name]; ok {
 			continue
@@ -460,12 +472,13 @@ func coFields(l, r Expr, primary, value string) []string {
 
 // emitList handles in/:/like/regex including their list forms.
 func (ex *extractor) emitList(op string, x Expr, values []Expr, negated, insensitive bool) {
-	f, fn := primaryField(x)
+	f, fn := primaryFieldWithBudget(x, ex.budget)
 	if f == nil {
 		return
 	}
 	var texts []string
 	for _, v := range values {
+		ex.budget.check(1)
 		texts = append(texts, valueText(v))
 	}
 	cond := Condition{
@@ -506,13 +519,14 @@ var booleanFunctions = map[string]string{
 func (ex *extractor) emitCall(c *Call) {
 	canonical := canonicalFunction(c.Name)
 
-	f, _ := primaryField(&Paren{X: argsAsExpr(c)})
+	f, _ := primaryFieldWithBudget(&Paren{X: argsAsExpr(c)}, ex.budget)
 	if f == nil {
 		return
 	}
 
 	var literals []string
 	for _, a := range c.Args {
+		ex.budget.check(1)
 		if lit, ok := unwrap(a).(*Literal); ok {
 			literals = append(literals, literalText(lit))
 		}
@@ -562,6 +576,15 @@ func (ex *extractor) emit(c Condition) {
 	c.LogicalOp = ex.logicalOp
 	c.Lineage = ex.lineage
 	ex.logicalOp = ""
+	ex.budget.condition()
+	textBytes := len(c.Field) + len(c.Operator) + len(c.Value) + len(c.EventCategory) + len(c.LogicalOp) + len(c.Function) + len(c.Lineage)
+	for _, text := range c.Alternatives {
+		textBytes += len(text)
+	}
+	for _, text := range c.CoFields {
+		textBytes += len(text)
+	}
+	ex.budget.addOutput(textBytes)
 	ex.res.Conditions = append(ex.res.Conditions, c)
 }
 
@@ -573,23 +596,28 @@ func (ex *extractor) emit(c Condition) {
 // with the name of the innermost function wrapping it ("" when the field is
 // used directly).
 func primaryField(e Expr) (*Field, string) {
+	return primaryFieldWithBudget(e, nil)
+}
+
+func primaryFieldWithBudget(e Expr, budget *parseBudget) (*Field, string) {
+	budget.check(1)
 	switch v := e.(type) {
 	case *Field:
 		return v, ""
 	case *Paren:
-		return primaryField(v.X)
+		return primaryFieldWithBudget(v.X, budget)
 	case *Unary:
-		return primaryField(v.X)
+		return primaryFieldWithBudget(v.X, budget)
 	case *Not:
-		return primaryField(v.X)
+		return primaryFieldWithBudget(v.X, budget)
 	case *Binary:
-		if f, fn := primaryField(v.L); f != nil {
+		if f, fn := primaryFieldWithBudget(v.L, budget); f != nil {
 			return f, fn
 		}
-		return primaryField(v.R)
+		return primaryFieldWithBudget(v.R, budget)
 	case *Call:
 		for _, a := range v.Args {
-			if f, fn := primaryField(a); f != nil {
+			if f, fn := primaryFieldWithBudget(a, budget); f != nil {
 				if fn == "" {
 					fn = canonicalFunction(v.Name)
 				}
@@ -598,9 +626,9 @@ func primaryField(e Expr) (*Field, string) {
 		}
 		return nil, ""
 	case *InExpr:
-		return primaryField(v.X)
+		return primaryFieldWithBudget(v.X, budget)
 	case *PatternExpr:
-		return primaryField(v.X)
+		return primaryFieldWithBudget(v.X, budget)
 	}
 	return nil, ""
 }
@@ -614,10 +642,12 @@ func canonicalFunction(name string) string {
 
 // collectFieldNodes returns every Field node in an expression, in source
 // order.
-func collectFieldNodes(e Expr) []*Field {
+
+func collectFieldNodesWithBudget(e Expr, budget *parseBudget) []*Field {
 	var out []*Field
 	var walk func(Expr)
 	walk = func(e Expr) {
+		budget.check(1)
 		switch v := e.(type) {
 		case *Field:
 			out = append(out, v)
@@ -657,7 +687,7 @@ func collectFieldNodes(e Expr) []*Field {
 // collectFields registers every field of an expression into the result's
 // Fields list (deduped, source order).
 func (ex *extractor) collectFields(e Expr) {
-	for _, f := range collectFieldNodes(e) {
+	for _, f := range collectFieldNodesWithBudget(e, ex.budget) {
 		ex.addField(f)
 	}
 }
@@ -670,6 +700,7 @@ func (ex *extractor) addField(f *Field) {
 	if _, ok := ex.fieldSeen[name]; ok {
 		return
 	}
+	ex.budget.addOutput(len(name))
 	ex.fieldSeen[name] = struct{}{}
 	ex.res.Fields = append(ex.res.Fields, name)
 }
@@ -745,12 +776,8 @@ var mergeableOperators = map[string]bool{
 // mergeOrAlternatives folds runs of OR-connected conditions on the same
 // field/operator into a single condition with Alternatives, mirroring the
 // other parsers' behavior for `f == "a" or f == "b"`.
-func mergeOrAlternatives(conds []Condition) []Condition {
-	merged, _ := mergeOrAlternativesWithIndexMap(conds)
-	return merged
-}
 
-func mergeOrAlternativesWithIndexMap(conds []Condition) ([]Condition, []int) {
+func mergeOrAlternativesWithIndexMapBudget(conds []Condition, budget *parseBudget) ([]Condition, []int) {
 	if len(conds) < 2 {
 		return conds, nil
 	}
@@ -760,11 +787,13 @@ func mergeOrAlternativesWithIndexMap(conds []Condition) ([]Condition, []int) {
 		indexMap[i] = -1
 	}
 	for i := 0; i < len(conds); i++ {
+		budget.check(1)
 		c := conds[i]
 		if i+1 < len(conds) && canMergeConditionAlternative(c, conds[i+1]) && canMergeAlternativeGroup(conds, i) {
 			alternatives := conditionAlternatives(c)
 			j := i + 1
 			for j < len(conds) && canMergeConditionAlternative(c, conds[j]) {
+				budget.check(1)
 				alternatives = append(alternatives, conditionAlternatives(conds[j])...)
 				j++
 			}
@@ -878,7 +907,7 @@ func ClassifyFieldProvenance(r *ParseResult, field string) FieldProvenance {
 	inMain, inJoined := false, false
 	present := isJoinKey
 	for _, c := range r.Conditions {
-		if c.Field != field && !(c.ValueIsField && c.Value == field) && !contains(c.CoFields, field) {
+		if c.Field != field && (!c.ValueIsField || c.Value != field) && !contains(c.CoFields, field) {
 			continue
 		}
 		present = true
@@ -1126,7 +1155,7 @@ func ClassifyFieldUsage(r *ParseResult, field string) FieldUsage {
 	}
 	stepSeen := map[int]struct{}{}
 	for _, c := range r.Conditions {
-		if c.Field != field && !(c.ValueIsField && c.Value == field) {
+		if c.Field != field && (!c.ValueIsField || c.Value != field) {
 			continue
 		}
 		if c.PipeStage > 0 {
