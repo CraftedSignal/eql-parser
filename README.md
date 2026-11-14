@@ -131,6 +131,15 @@ tree. Ordinary syntax errors still support best-effort extraction.
 
 `ParseResult` carries `Conditions`, `EventCategories`, `Sequence`, `Pipes`,
 `Commands`, `Fields`, `JoinKeys` (also via `GroupByFields()`), and `Errors`.
+`Conditions` is a flat, best-effort field projection. For event filters, use
+`Expression` as the complete boolean tree: a `condition` leaf refers to a
+condition index, while a `scalar` leaf carries canonical EQL syntax and any
+enclosing NOT parity. A scalar can represent a constant, a field-free
+predicate, or a computed/function predicate. Consumers must preserve it or
+explicitly reject it; dropping it or treating it as true changes the filter.
+The corresponding `SemanticQuery.Expression` carries owned condition and
+scalar leaves. Scalar syntax is canonical rendering, not the original source
+substring or an evaluated truth value.
 Each `Condition` records the `Field`, `Operator`, `Value`, `Negated`,
 `CaseInsensitive`, `LogicalOp`, `Alternatives`, `EventCategory`,
 `SequenceStep`, `FromUntil`, `FromMissing`, `PipeStage`, `IsOptional`,
@@ -138,6 +147,28 @@ Each `Condition` records the `Field`, `Operator`, `Value`, `Negated`,
 steps additionally expose a recursive `Subquery *ParseResult` — a
 self-contained extraction of that correlation term, the EQL analog of a join
 subsearch.
+
+Newly extracted field conditions also carry `RHS` and `PredicateSyntax`.
+`RHS` identifies string, number, bool, null, field, list, or expression
+operands; list items retain their kinds, order, and repetitions. Number text
+keeps its original notation, and a null operand has no sentinel text.
+`PredicateSyntax` is the full atomic predicate in canonical EQL, including
+function arguments and their order. For a safely merged OR condition, it is
+the canonical OR of its source atoms. Computed predicates remain scalar leaves
+in the complete expression even when flat extraction reports a field.
+Quoted and indexed field paths that collide after flattening also remain
+scalar leaves; their `PredicateSyntax` keeps the exact path structure. Ambiguous
+RHS field references use an expression operand with canonical EQL text.
+Older serialized conditions without `RHS` are untyped: `Value` alone does not
+establish whether `null`, `true`, or `1` was a literal or a string. These
+metadata fields are additive in JSON, but adding exported Go struct fields
+can break unkeyed struct literals. Consumers should use `Expression` for
+boolean meaning and either support scalar leaves and typed RHS explicitly or
+reject unsupported predicates.
+
+Parsing is intentionally permissive: field-to-field comparisons such as
+`x == y` can be represented locally, although modern Elasticsearch EQL does
+not support them. Parser acceptance alone does not establish service support.
 
 ## Sigma interoperability
 

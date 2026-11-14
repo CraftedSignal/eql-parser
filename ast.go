@@ -412,7 +412,7 @@ func (e *Field) render(b *strings.Builder) {
 		if i > 0 {
 			b.WriteByte('.')
 		}
-		if isPlainIdent(s.Name) {
+		if isBareFieldIdent(s.Name) {
 			b.WriteString(s.Name)
 		} else {
 			b.WriteByte('`')
@@ -492,6 +492,32 @@ func isPlainIdent(s string) bool {
 				return false
 			}
 		default:
+			return false
+		}
+	}
+	return true
+}
+
+// A keyword is lexed as its own token, so it cannot be emitted as a bare
+// field segment in expression position even when its spelling is identifier-like.
+func isBareFieldIdent(s string) bool {
+	if !isPlainIdent(s) {
+		return false
+	}
+	_, reserved := keywords[strings.ToLower(s)]
+	return !reserved
+}
+
+// flatFieldIdentity reports whether Field.Name uniquely carries the path's
+// structure. Quoted segments and indices can collide with other field paths
+// after flattening; they must use canonical syntax for semantic identity.
+func flatFieldIdentity(f *Field, budget *parseBudget) bool {
+	if f == nil || len(f.Path) == 0 {
+		return false
+	}
+	for _, segment := range f.Path {
+		budget.check(1)
+		if segment.IsIndex || !isBareFieldIdent(segment.Name) {
 			return false
 		}
 	}

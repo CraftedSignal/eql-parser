@@ -1,6 +1,7 @@
 package eql
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -10,29 +11,42 @@ type BooleanOperator string
 
 const (
 	BooleanCondition BooleanOperator = "condition"
+	BooleanScalar    BooleanOperator = "scalar"
 	BooleanAnd       BooleanOperator = "and"
 	BooleanOr        BooleanOperator = "or"
 )
 
-// ConditionExpression preserves boolean grouping over extracted Conditions.
+// ScalarPredicate preserves an opaque atomic predicate as canonical EQL.
+// Syntax excludes contextual NOT; Negated records that NOT's parity. It is not
+// evaluated truth and must never be dropped by consumers.
+type ScalarPredicate struct {
+	Syntax  string `json:"syntax"`
+	Negated bool   `json:"negated,omitempty"`
+}
+
+// ConditionExpression preserves the complete event-filter boolean predicate.
 // ConditionIndex references ParseResult.Conditions.
 type ConditionExpression struct {
 	Operator       BooleanOperator        `json:"operator"`
 	ConditionIndex int                    `json:"condition_index"`
 	Children       []*ConditionExpression `json:"children,omitempty"`
+	Scalar         *ScalarPredicate       `json:"scalar,omitempty"`
 }
 
 func buildConditionExpression(query *Query, conditions []Condition) *ConditionExpression {
 	return buildConditionExpressionWithBudget(query, conditions, nil)
 }
 
-func buildConditionExpressionWithBudget(query *Query, conditions []Condition, budget *parseBudget) *ConditionExpression {
-	if query == nil || len(conditions) < 2 {
+func buildConditionExpressionWithBudget(query *Query, conditions []Condition, budget *parseBudget, extraction ...map[Expr]conditionRange) *ConditionExpression {
+	if query == nil {
 		return nil
 	}
 	builder := &eqlExpressionBuilder{conditions: conditions, budget: budget}
+	if len(extraction) > 0 {
+		builder.leaves = extraction[0]
+	}
 	expression := builder.query(query)
-	if expression != nil && builder.next == len(conditions) && expressionHasOperator(expression, BooleanOr) {
+	if expression != nil {
 		return expression
 	}
 	return nil
@@ -42,6 +56,7 @@ type eqlExpressionBuilder struct {
 	budget     *parseBudget
 	conditions []Condition
 	next       int
+	leaves     map[Expr]conditionRange
 }
 
 func (b *eqlExpressionBuilder) query(query *Query) *ConditionExpression {
@@ -69,10 +84,10 @@ func (b *eqlExpressionBuilder) eventQuery(query *EventQuery) *ConditionExpressio
 
 func (b *eqlExpressionBuilder) expr(expr Expr, negated bool) *ConditionExpression {
 	b.budget.node()
-	switch typed := unwrap(expr).(type) {
+	atom := unwrap(expr)
+	switch typed := atom.(type) {
 	case *Binary:
-		switch typed.Op {
-		case "and", "or":
+		if typed.Op == "and" || typed.Op == "or" {
 			operator := BooleanAnd
 			if typed.Op == "or" {
 				operator = BooleanOr
@@ -85,40 +100,82 @@ func (b *eqlExpressionBuilder) expr(expr Expr, negated bool) *ConditionExpressio
 				}
 			}
 			return combineConditionExpressions(operator, b.expr(typed.L, negated), b.expr(typed.R, negated))
-		case "==", "!=", "<", "<=", ">", ">=":
-			if !comparisonEmitsCondition(typed) {
-				return nil
-			}
-			return b.condition()
-		default:
-			return nil
 		}
 	case *Not:
 		return b.expr(typed.X, !negated)
-	case *Unary:
-		return b.expr(typed.X, negated)
-	case *InExpr:
-		if primary, _ := primaryFieldWithBudget(typed.X, b.budget); primary == nil {
-			return nil
+	}
+	// Extraction records all emissions from each AST atom. A scalar may consume
+	// flat best-effort conditions, but those indexes are never semantic leaves.
+	if faithfulConditionAtom(atom, b.budget) {
+		if b.leaves != nil {
+			span, ok := b.leaves[atom]
+			if !ok {
+				span, ok = b.leaves[expr]
+			}
+			if ok && span.end == span.start+1 {
+				return &ConditionExpression{Operator: BooleanCondition, ConditionIndex: span.start}
+			}
+		} else {
+			return b.condition()
 		}
-		return b.condition()
-	case *PatternExpr:
-		if primary, _ := primaryFieldWithBudget(typed.X, b.budget); primary == nil {
-			return nil
-		}
-		return b.condition()
-	case *Call:
-		if primary, _ := primaryFieldWithBudget(&Paren{X: argsAsExpr(typed)}, b.budget); primary == nil {
-			return nil
-		}
-		return b.condition()
-	case *Field:
-		return b.condition()
-	case *Lineage:
-		return b.eventQuery(typed.Sub)
-	default:
+	}
+	if atom == nil {
 		return nil
 	}
+	syntax := canonicalExprWithBudget(atom, b.budget)
+	b.budget.addOutputExact(jsonTextBound(syntax, b.budget))
+	b.budget.node()
+	return &ConditionExpression{Operator: BooleanScalar, Scalar: &ScalarPredicate{Syntax: syntax, Negated: negated}}
+}
+
+// Only atoms faithfully represented by a Condition are executable condition
+// leaves. Computed operands and calls remain opaque, even if flat extraction
+// reports a useful primary field.
+func faithfulConditionAtom(e Expr, budget *parseBudget) bool {
+	budget.check(1)
+	switch v := unwrap(e).(type) {
+	case *Field:
+		return flatFieldIdentity(v, budget)
+	case *Binary:
+		switch v.Op {
+		case "==", "!=", "<", "<=", ">", ">=":
+		default:
+			return false
+		}
+		left, leftField := unwrap(v.L).(*Field)
+		right, rightField := unwrap(v.R).(*Field)
+		lf := leftField && flatFieldIdentity(left, budget)
+		rf := rightField && flatFieldIdentity(right, budget)
+		if leftField && !lf || rightField && !rf {
+			return false
+		}
+		return lf && (rf || literalOperand(v.R)) || rf && literalOperand(v.L)
+	case *InExpr:
+		field, ok := unwrap(v.X).(*Field)
+		if !ok || !flatFieldIdentity(field, budget) {
+			return false
+		}
+		for _, item := range v.List {
+			budget.check(1)
+			if !literalOperand(item) {
+				return false
+			}
+		}
+		return true
+	case *PatternExpr:
+		field, ok := unwrap(v.X).(*Field)
+		if !ok || !flatFieldIdentity(field, budget) {
+			return false
+		}
+		for _, item := range v.Patterns {
+			budget.check(1)
+			if !literalOperand(item) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
 }
 
 func comparisonEmitsCondition(binary *Binary) bool {
@@ -199,11 +256,24 @@ func (r *conditionExpressionRemapper) remap(expression *ConditionExpression) *Co
 			return nil
 		}
 		return &ConditionExpression{Operator: BooleanCondition, ConditionIndex: mapped}
+	case BooleanScalar:
+		if expression.Scalar == nil {
+			panic(parseAbort{err: fmt.Errorf("scalar predicate has no payload")})
+		}
+		r.budget.addOutput(len(expression.Scalar.Syntax))
+		scalar := *expression.Scalar
+		return &ConditionExpression{Operator: BooleanScalar, Scalar: &scalar}
 	case BooleanAnd, BooleanOr:
 		converted := &ConditionExpression{Operator: expression.Operator}
 		seen := map[int]bool{}
 		appendChild := func(child *ConditionExpression) {
 			r.budget.check(1)
+			// Unknown calls need not be pure. Never deduplicate a scalar or
+			// a group containing one, even when its syntax repeats.
+			if expressionHasOperator(child, BooleanScalar) {
+				converted.Children = append(converted.Children, child)
+				return
+			}
 			id := r.identity(child)
 			if !seen[id] {
 				seen[id] = true
@@ -231,7 +301,7 @@ func (r *conditionExpressionRemapper) remap(expression *ConditionExpression) *Co
 		}
 		return converted
 	default:
-		return nil
+		panic(parseAbort{err: fmt.Errorf("unknown boolean operator %q", expression.Operator)})
 	}
 }
 
@@ -239,7 +309,7 @@ func equalConditionExpression(a, b *ConditionExpression) bool {
 	if a == nil || b == nil {
 		return a == b
 	}
-	if a.Operator != b.Operator || a.ConditionIndex != b.ConditionIndex || len(a.Children) != len(b.Children) {
+	if a.Operator != b.Operator || a.ConditionIndex != b.ConditionIndex || !equalScalarPredicate(a.Scalar, b.Scalar) || len(a.Children) != len(b.Children) {
 		return false
 	}
 	for i := range a.Children {
@@ -284,4 +354,11 @@ func expressionHasOperator(expression *ConditionExpression, operator BooleanOper
 		}
 	}
 	return false
+}
+
+func equalScalarPredicate(a, b *ScalarPredicate) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return *a == *b
 }

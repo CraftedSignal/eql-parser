@@ -3,6 +3,7 @@ package eql
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -32,6 +33,8 @@ type Condition struct {
 	ValueIsField    bool     `json:"value_is_field,omitempty"`   // Value names another field (field-to-field comparison)
 	CoFields        []string `json:"co_fields,omitempty"`        // other fields in the same comparison (e.g. b in "a + b > 10")
 	Lineage         string   `json:"lineage,omitempty"`          // "child", "descendant", "event" for legacy lineage subqueries
+	RHS             *Operand `json:"rhs,omitempty"`              // typed normalized value side, when known
+	PredicateSyntax string   `json:"predicate_syntax,omitempty"` // complete canonical atomic predicate
 }
 
 // SequenceStepInfo describes one bracketed event of a sequence/join/sample.
@@ -75,6 +78,7 @@ type ParseResult struct {
 	Fields          []string             `json:"fields,omitempty"`    // every field referenced anywhere (source order, deduped)
 	JoinKeys        []string             `json:"join_keys,omitempty"` // every by-clause field (global + per-step)
 	Errors          []string             `json:"errors,omitempty"`
+	astExpression   bool
 }
 
 // FieldUsage classifies how a field participates in a query.
@@ -128,10 +132,12 @@ func extractWithBudget(query string, budget *parseBudget) (res *ParseResult) {
 	res.Errors = errs
 	ex := newExtractorWithBudget(res, budget)
 	ex.extractQuery(ast)
-	rawConditions := append([]Condition(nil), res.Conditions...)
+	rawConditions := res.Conditions
+	res.astExpression = ast != nil
+	rawExpression := buildConditionExpressionWithBudget(ast, rawConditions, budget, ex.leaves)
 	var conditionIndexMap []int
-	res.Conditions, conditionIndexMap = mergeOrAlternativesWithIndexMapBudget(res.Conditions, budget)
-	res.Expression = remapConditionExpressionWithBudget(buildConditionExpressionWithBudget(ast, rawConditions, budget), conditionIndexMap, budget)
+	res.Conditions, conditionIndexMap = mergeOrAlternativesWithIndexMapBudget(res.Conditions, budget, ex.mergeGroups)
+	res.Expression = remapConditionExpressionWithBudget(rawExpression, conditionIndexMap, budget)
 	budget.check(0)
 	return res
 }
@@ -144,6 +150,7 @@ func newExtractor(res *ParseResult) *extractor {
 func newExtractorWithBudget(res *ParseResult, budget *parseBudget) *extractor {
 	return &extractor{
 		budget:    budget,
+		leaves:    map[Expr]conditionRange{},
 		res:       res,
 		fieldSeen: map[string]struct{}{},
 		joinSeen:  map[string]struct{}{},
@@ -166,7 +173,11 @@ func extractSubqueryWithBudget(e *EventQuery, budget *parseBudget) *ParseResult 
 	}
 	ex := newExtractorWithBudget(sub, budget)
 	ex.enterEventQuery(e, 0, false, false, "")
-	sub.Conditions, _ = mergeOrAlternativesWithIndexMapBudget(sub.Conditions, budget)
+	sub.astExpression = true
+	rawExpression := buildConditionExpressionWithBudget(&Query{Body: e}, sub.Conditions, budget, ex.leaves)
+	var indexMap []int
+	sub.Conditions, indexMap = mergeOrAlternativesWithIndexMapBudget(sub.Conditions, budget, ex.mergeGroups)
+	sub.Expression = remapConditionExpressionWithBudget(rawExpression, indexMap, budget)
 	return sub
 }
 
@@ -184,6 +195,12 @@ type extractor struct {
 	lineage   string
 	negated   bool
 	logicalOp string // connective for the next emitted condition
+
+	mergeGroup     int
+	nextMergeGroup int
+	mergeGroups    []int
+	leaves         map[Expr]conditionRange
+	atom           Expr
 
 	fieldSeen map[string]struct{}
 	joinSeen  map[string]struct{}
@@ -342,8 +359,23 @@ func (ex *extractor) registerJoinKey(e Expr) []string {
 // Expression walking
 // ---------------------------------------------------------------------------
 
+type conditionRange struct{ start, end int }
+
 func (ex *extractor) walkExpr(e Expr) {
 	ex.budget.check(1)
+	previousAtom := ex.atom
+	ex.atom = e
+	defer func() { ex.atom = previousAtom }()
+	start := len(ex.res.Conditions)
+	defer func() { ex.budget.check(1); ex.leaves[e] = conditionRange{start, len(ex.res.Conditions)} }()
+	previousGroup := ex.mergeGroup
+	if ex.mergeGroup == 0 && !ex.negated {
+		if binary, ok := unwrap(e).(*Binary); ok && binary.Op == "or" && safeAlternativeTree(e, ex.budget) {
+			ex.nextMergeGroup++
+			ex.mergeGroup = ex.nextMergeGroup
+		}
+	}
+	defer func() { ex.mergeGroup = previousGroup }()
 	switch v := e.(type) {
 	case *Binary:
 		switch v.Op {
@@ -378,11 +410,11 @@ func (ex *extractor) walkExpr(e Expr) {
 		ex.walkExpr(v.X)
 
 	case *InExpr:
-		ex.emitList("in", v.X, v.List, v.Negated, v.Insensitive)
+		ex.emitList("in", v.X, v.List, v.Negated, v.Insensitive, true)
 
 	case *PatternExpr:
 		insensitive := v.Insensitive || v.Kind == PatternSeq
-		ex.emitList(string(v.Kind), v.X, v.Patterns, false, insensitive)
+		ex.emitList(string(v.Kind), v.X, v.Patterns, false, insensitive, v.Parenthesized || len(v.Patterns) != 1)
 
 	case *Call:
 		ex.emitCall(v)
@@ -394,6 +426,7 @@ func (ex *extractor) walkExpr(e Expr) {
 			Operator:   "==",
 			Value:      "true",
 			IsOptional: v.Optional,
+			RHS:        &Operand{Kind: OperandBool, Text: "true"},
 		})
 
 	case *Lineage:
@@ -425,6 +458,7 @@ func (ex *extractor) emitComparison(op string, l, r Expr) {
 			IsOptional:   lf.Optional,
 			Function:     lfn,
 			CoFields:     coFieldsWithBudget(l, r, lf.Name(), rf.Name(), ex.budget),
+			RHS:          operandFromExpr(r, ex.budget),
 		})
 	case lf != nil:
 		ex.emit(Condition{
@@ -434,6 +468,7 @@ func (ex *extractor) emitComparison(op string, l, r Expr) {
 			IsOptional: lf.Optional,
 			Function:   lfn,
 			CoFields:   coFieldsWithBudget(l, r, lf.Name(), "", ex.budget),
+			RHS:        operandFromExpr(r, ex.budget),
 		})
 	case rf != nil:
 		ex.emit(Condition{
@@ -443,6 +478,7 @@ func (ex *extractor) emitComparison(op string, l, r Expr) {
 			IsOptional: rf.Optional,
 			Function:   rfn,
 			CoFields:   coFieldsWithBudget(l, r, rf.Name(), "", ex.budget),
+			RHS:        operandFromExpr(l, ex.budget),
 		})
 	}
 }
@@ -471,7 +507,7 @@ func coFieldsWithBudget(l, r Expr, primary, value string, budget *parseBudget) [
 }
 
 // emitList handles in/:/like/regex including their list forms.
-func (ex *extractor) emitList(op string, x Expr, values []Expr, negated, insensitive bool) {
+func (ex *extractor) emitList(op string, x Expr, values []Expr, negated, insensitive, asList bool) {
 	f, fn := primaryFieldWithBudget(x, ex.budget)
 	if f == nil {
 		return
@@ -481,6 +517,12 @@ func (ex *extractor) emitList(op string, x Expr, values []Expr, negated, insensi
 		ex.budget.check(1)
 		texts = append(texts, valueText(v))
 	}
+	var rhs *Operand
+	if !asList && len(values) == 1 {
+		rhs = operandFromExpr(values[0], ex.budget)
+	} else {
+		rhs = listOperand(values, ex.budget)
+	}
 	cond := Condition{
 		Field:           f.Name(),
 		Operator:        op,
@@ -488,6 +530,7 @@ func (ex *extractor) emitList(op string, x Expr, values []Expr, negated, insensi
 		CaseInsensitive: insensitive,
 		IsOptional:      f.Optional,
 		Function:        fn,
+		RHS:             rhs,
 	}
 	if len(texts) > 0 {
 		cond.Value = texts[0]
@@ -575,17 +618,22 @@ func (ex *extractor) emit(c Condition) {
 	c.PipeStage = ex.pipeStage
 	c.LogicalOp = ex.logicalOp
 	c.Lineage = ex.lineage
+	if ex.atom != nil {
+		c.PredicateSyntax = canonicalExprWithBudget(ex.atom, ex.budget)
+	}
 	ex.logicalOp = ""
 	ex.budget.condition()
-	textBytes := len(c.Field) + len(c.Operator) + len(c.Value) + len(c.EventCategory) + len(c.LogicalOp) + len(c.Function) + len(c.Lineage)
+	textBound := 96 + jsonTextBound(c.Field, ex.budget) + jsonTextBound(c.Operator, ex.budget) + jsonTextBound(c.Value, ex.budget) + jsonTextBound(c.EventCategory, ex.budget) + jsonTextBound(c.LogicalOp, ex.budget) + jsonTextBound(c.Function, ex.budget) + jsonTextBound(c.Lineage, ex.budget)
 	for _, text := range c.Alternatives {
-		textBytes += len(text)
+		textBound += 4 + jsonTextBound(text, ex.budget)
 	}
 	for _, text := range c.CoFields {
-		textBytes += len(text)
+		textBound += 4 + jsonTextBound(text, ex.budget)
 	}
-	ex.budget.addOutput(textBytes)
+	textBound += jsonTextBound(c.PredicateSyntax, ex.budget) + operandJSONBound(c.RHS, ex.budget)
+	ex.budget.addOutputExact(textBound)
 	ex.res.Conditions = append(ex.res.Conditions, c)
+	ex.mergeGroups = append(ex.mergeGroups, ex.mergeGroup)
 }
 
 // ---------------------------------------------------------------------------
@@ -777,10 +825,11 @@ var mergeableOperators = map[string]bool{
 // field/operator into a single condition with Alternatives, mirroring the
 // other parsers' behavior for `f == "a" or f == "b"`.
 
-func mergeOrAlternativesWithIndexMapBudget(conds []Condition, budget *parseBudget) ([]Condition, []int) {
+func mergeOrAlternativesWithIndexMapBudget(conds []Condition, budget *parseBudget, groups []int) ([]Condition, []int) {
 	if len(conds) < 2 {
 		return conds, nil
 	}
+	budget.addOutput(len(conds) * 8)
 	out := make([]Condition, 0, len(conds))
 	indexMap := make([]int, len(conds))
 	for i := range indexMap {
@@ -789,23 +838,44 @@ func mergeOrAlternativesWithIndexMapBudget(conds []Condition, budget *parseBudge
 	for i := 0; i < len(conds); i++ {
 		budget.check(1)
 		c := conds[i]
-		if i+1 < len(conds) && canMergeConditionAlternative(c, conds[i+1]) && canMergeAlternativeGroup(conds, i) {
+		if i+1 < len(conds) && canMergeConditionAlternative(c, conds[i+1]) && groups[i] != 0 && groups[i] == groups[i+1] {
 			alternatives := conditionAlternatives(c)
+			var operands []Operand
+			if c.RHS != nil {
+				operands = conditionOperandItems(c)
+			}
+			syntaxes := []string{c.PredicateSyntax}
 			j := i + 1
-			for j < len(conds) && canMergeConditionAlternative(c, conds[j]) {
+			for j < len(conds) && groups[j] == groups[i] && canMergeConditionAlternative(c, conds[j]) {
 				budget.check(1)
 				alternatives = append(alternatives, conditionAlternatives(conds[j])...)
+				if operands != nil {
+					operands = append(operands, conditionOperandItems(conds[j])...)
+				}
+				syntaxes = append(syntaxes, conds[j].PredicateSyntax)
 				j++
 			}
 			if len(alternatives) > 1 {
-				c.Alternatives = deduplicateConditionValues(alternatives)
+				if operands != nil {
+					c.RHS = &Operand{Kind: OperandList}
+					c.RHS.Items, c.Alternatives = uniqueOperandAlternatives(operands, budget)
+				} else {
+					c.Alternatives = deduplicateConditionValues(alternatives)
+				}
+				if c.PredicateSyntax != "" {
+					joinedLen := 4 * (len(syntaxes) - 1)
+					for _, syntax := range syntaxes {
+						budget.check(1)
+						joinedLen += len(syntax)
+					}
+					budget.reserveRenderBytes(joinedLen)
+					c.PredicateSyntax = strings.Join(syntaxes, " or ")
+					budget.addOutputExact(jsonTextBound(c.PredicateSyntax, budget))
+				}
 				mergedIndex := len(out)
 				out = append(out, c)
 				for rawIndex := i; rawIndex < j; rawIndex++ {
 					indexMap[rawIndex] = mergedIndex
-				}
-				if j < len(conds) && strings.EqualFold(conds[j].LogicalOp, "OR") {
-					conds[j].LogicalOp = "AND"
 				}
 				i = j - 1
 				continue
@@ -817,15 +887,60 @@ func mergeOrAlternativesWithIndexMapBudget(conds []Condition, budget *parseBudge
 	return out, indexMap
 }
 
-func canMergeAlternativeGroup(conds []Condition, index int) bool {
-	if index == 0 || strings.EqualFold(conds[index].LogicalOp, "OR") {
+// safeAlternativeTree proves that every sibling in this positive OR group
+// is a direct-field atom with literal values. Unsupported atoms are barriers.
+func safeAlternativeTree(e Expr, budget *parseBudget) bool {
+	budget.check(1)
+	switch v := unwrap(e).(type) {
+	case *Binary:
+		if v.Op == "or" {
+			return safeAlternativeTree(v.L, budget) && safeAlternativeTree(v.R, budget)
+		}
+		if !mergeableOperators[v.Op] {
+			return false
+		}
+		left, leftField := unwrap(v.L).(*Field)
+		right, rightField := unwrap(v.R).(*Field)
+		lf := leftField && flatFieldIdentity(left, budget)
+		rf := rightField && flatFieldIdentity(right, budget)
+		return lf && literalOperand(v.R) || rf && literalOperand(v.L)
+	case *InExpr:
+		field, ok := unwrap(v.X).(*Field)
+		if !ok || !flatFieldIdentity(field, budget) || v.Negated {
+			return false
+		}
+		for _, item := range v.List {
+			budget.check(1)
+			if !literalOperand(item) {
+				return false
+			}
+		}
 		return true
+	case *PatternExpr:
+		field, ok := unwrap(v.X).(*Field)
+		if !ok || !flatFieldIdentity(field, budget) {
+			return false
+		}
+		for _, item := range v.Patterns {
+			budget.check(1)
+			if !literalOperand(item) {
+				return false
+			}
+		}
+		return true
+	default:
+		return false
 	}
-	j := index + 1
-	for j < len(conds) && canMergeConditionAlternative(conds[index], conds[j]) {
-		j++
+}
+func literalOperand(e Expr) bool {
+	switch v := unwrap(e).(type) {
+	case *Literal:
+		return true
+	case *Unary:
+		l, ok := unwrap(v.X).(*Literal)
+		return ok && l.Kind == LitNumber
 	}
-	return j == len(conds) || strings.EqualFold(conds[j].LogicalOp, "OR")
+	return false
 }
 
 func canMergeConditionAlternative(a, b Condition) bool {
@@ -836,7 +951,10 @@ func canMergeConditionAlternative(a, b Condition) bool {
 		!a.Negated &&
 		!b.Negated &&
 		a.CaseInsensitive == b.CaseInsensitive &&
-		a.Function == b.Function &&
+		a.Function == "" && b.Function == "" &&
+		a.IsOptional == b.IsOptional &&
+		slices.Equal(a.CoFields, b.CoFields) &&
+		a.FromMissing == b.FromMissing &&
 		a.EventCategory == b.EventCategory &&
 		a.SequenceStep == b.SequenceStep &&
 		a.PipeStage == b.PipeStage &&
@@ -850,6 +968,42 @@ func conditionAlternatives(cond Condition) []string {
 		return append([]string(nil), cond.Alternatives...)
 	}
 	return []string{cond.Value}
+}
+
+func conditionOperandItems(cond Condition) []Operand {
+	if cond.RHS == nil {
+		return nil
+	}
+	if cond.RHS.Kind == OperandList {
+		return append([]Operand(nil), cond.RHS.Items...)
+	}
+	return []Operand{*cond.RHS}
+}
+
+func uniqueOperandAlternatives(items []Operand, budget *parseBudget) ([]Operand, []string) {
+	budget.check(len(items))
+	budget.addOutputExact(96 * len(items))
+	seen := make(map[string]bool, len(items))
+	operands := make([]Operand, 0, len(items))
+	values := make([]string, 0, len(items))
+	for _, item := range items {
+		budget.check(1)
+		key := string(item.Kind) + ":" + strconv.Itoa(len(item.Text)) + ":" + item.Text
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		operands = append(operands, item)
+		values = append(values, operandLegacyText(item))
+	}
+	return operands, values
+}
+
+func operandLegacyText(item Operand) string {
+	if item.Kind == OperandNull {
+		return "null"
+	}
+	return item.Text
 }
 
 func deduplicateConditionValues(values []string) []string {
@@ -985,10 +1139,9 @@ func isIdentByte(b byte) bool {
 }
 
 // DeduplicateConditions removes duplicate conditions, keeping the first
-// occurrence of each. Two conditions are duplicates when they agree on field,
-// operator, value, negation, case-sensitivity, alternatives, and correlation
-// context (step, pipe stage, until, lineage). Exported for parity with the
-// sibling parsers' adapters.
+// occurrence of each. Identity covers every predicate and context field except
+// LogicalOp, which connects a condition to its predecessor. The returned
+// conditions own their slice and operand metadata.
 func DeduplicateConditions(conds []Condition) []Condition {
 	seen := make(map[string]struct{}, len(conds))
 	out := make([]Condition, 0, len(conds))
@@ -998,39 +1151,61 @@ func DeduplicateConditions(conds []Condition) []Condition {
 			continue
 		}
 		seen[key] = struct{}{}
-		out = append(out, c)
+		out = append(out, cloneConditionWithBudget(c, nil))
 	}
 	return out
 }
 
 func conditionDedupKey(c Condition) string {
 	var b strings.Builder
-	b.WriteString(c.Field)
-	b.WriteByte('\x00')
-	b.WriteString(c.Operator)
-	b.WriteByte('\x00')
-	b.WriteString(c.Value)
-	b.WriteByte('\x00')
-	b.WriteString(strings.Join(c.Alternatives, "\x1f"))
-	b.WriteByte('\x00')
-	if c.Negated {
-		b.WriteByte('n')
+	for _, value := range []string{c.Field, c.Operator, c.Value, c.EventCategory, c.Function, c.Lineage, c.PredicateSyntax} {
+		writeIdentityString(&b, value)
 	}
-	if c.CaseInsensitive {
-		b.WriteByte('i')
+	for _, value := range []bool{c.Negated, c.CaseInsensitive, c.FromUntil, c.FromMissing, c.IsOptional, c.ValueIsField} {
+		if value {
+			b.WriteByte('1')
+		} else {
+			b.WriteByte('0')
+		}
 	}
-	b.WriteByte('\x00')
-	b.WriteString(c.EventCategory)
-	b.WriteByte('\x00')
-	b.WriteString(c.Lineage)
-	b.WriteByte('\x00')
-	b.WriteString(strconv.Itoa(c.SequenceStep))
-	b.WriteByte('\x00')
-	b.WriteString(strconv.Itoa(c.PipeStage))
-	if c.FromUntil {
-		b.WriteByte('u')
-	}
+	writeIdentityString(&b, strconv.Itoa(c.SequenceStep))
+	writeIdentityString(&b, strconv.Itoa(c.PipeStage))
+	writeIdentityStrings(&b, c.Alternatives)
+	writeIdentityStrings(&b, c.CoFields)
+	writeOperandIdentity(&b, c.RHS)
 	return b.String()
+}
+
+func writeIdentityString(b *strings.Builder, value string) {
+	b.WriteString(strconv.Itoa(len(value)))
+	b.WriteByte(':')
+	b.WriteString(value)
+}
+
+func writeIdentityStrings(b *strings.Builder, values []string) {
+	writeIdentityString(b, strconv.Itoa(len(values)))
+	for _, value := range values {
+		writeIdentityString(b, value)
+	}
+}
+
+func writeOperandIdentity(b *strings.Builder, value *Operand) {
+	if value == nil {
+		b.WriteByte('0')
+		return
+	}
+	b.WriteByte('1')
+	writeIdentityString(b, string(value.Kind))
+	writeIdentityString(b, value.Text)
+	if value.Optional {
+		b.WriteByte('1')
+	} else {
+		b.WriteByte('0')
+	}
+	writeIdentityString(b, strconv.Itoa(len(value.Items)))
+	for i := range value.Items {
+		writeOperandIdentity(b, &value.Items[i])
+	}
 }
 
 // statisticalPipes are post-processing commands that aggregate or reduce the

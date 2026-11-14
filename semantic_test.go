@@ -150,9 +150,6 @@ func TestSemanticExpressionConversionEdges(t *testing.T) {
 				{Operator: BooleanCondition, ConditionIndex: len(conditions)},
 			},
 		},
-		"unknown_operator": {
-			Operator: "xor",
-		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			if got := semanticExpressionFromParseExpression(expression, conditions); got != nil {

@@ -95,6 +95,30 @@ func (b *parseBudget) addOutput(textBytes int) {
 	}
 }
 
+// reserveRenderBytes checks the maximum temporary renderer allocation before
+// rendering. Persistent result text is separately charged by addOutput.
+func (b *parseBudget) reserveRenderBytes(bound int) {
+	if b == nil {
+		return
+	}
+	b.check(1)
+	b.output -= bound
+	if b.output < 0 {
+		b.fail("output")
+	}
+}
+
+func (b *parseBudget) addOutputExact(bound int) {
+	if b == nil {
+		return
+	}
+	b.check(1)
+	b.output -= 128 + bound
+	if b.output < 0 {
+		b.fail("output")
+	}
+}
+
 func (b *parseBudget) condition() {
 	if b == nil {
 		return
