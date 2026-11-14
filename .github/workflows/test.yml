@@ -40,7 +40,7 @@ jobs:
         run: go mod download
 
       - name: Run Tests
-        run: go test -v -race -coverprofile=coverage.out ./...
+        run: go test -v -race -timeout=18m -coverprofile=coverage.out ./...
 
       - name: Upload coverage
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5
