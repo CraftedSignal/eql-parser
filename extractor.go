@@ -3,6 +3,7 @@ package eql
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -130,7 +131,7 @@ func extractWithBudget(query string, budget *parseBudget) (res *ParseResult) {
 	ex.extractQuery(ast)
 	rawConditions := append([]Condition(nil), res.Conditions...)
 	var conditionIndexMap []int
-	res.Conditions, conditionIndexMap = mergeOrAlternativesWithIndexMapBudget(res.Conditions, budget)
+	res.Conditions, conditionIndexMap = mergeOrAlternativesWithIndexMapBudget(res.Conditions, budget, ex.mergeGroups)
 	res.Expression = remapConditionExpressionWithBudget(buildConditionExpressionWithBudget(ast, rawConditions, budget), conditionIndexMap, budget)
 	budget.check(0)
 	return res
@@ -144,6 +145,7 @@ func newExtractor(res *ParseResult) *extractor {
 func newExtractorWithBudget(res *ParseResult, budget *parseBudget) *extractor {
 	return &extractor{
 		budget:    budget,
+		leaves:    map[Expr]conditionRange{},
 		res:       res,
 		fieldSeen: map[string]struct{}{},
 		joinSeen:  map[string]struct{}{},
@@ -166,7 +168,7 @@ func extractSubqueryWithBudget(e *EventQuery, budget *parseBudget) *ParseResult 
 	}
 	ex := newExtractorWithBudget(sub, budget)
 	ex.enterEventQuery(e, 0, false, false, "")
-	sub.Conditions, _ = mergeOrAlternativesWithIndexMapBudget(sub.Conditions, budget)
+	sub.Conditions, _ = mergeOrAlternativesWithIndexMapBudget(sub.Conditions, budget, ex.mergeGroups)
 	return sub
 }
 
@@ -184,6 +186,11 @@ type extractor struct {
 	lineage   string
 	negated   bool
 	logicalOp string // connective for the next emitted condition
+
+	mergeGroup     int
+	nextMergeGroup int
+	mergeGroups    []int
+	leaves         map[Expr]conditionRange
 
 	fieldSeen map[string]struct{}
 	joinSeen  map[string]struct{}
@@ -342,8 +349,20 @@ func (ex *extractor) registerJoinKey(e Expr) []string {
 // Expression walking
 // ---------------------------------------------------------------------------
 
+type conditionRange struct{ start, end int }
+
 func (ex *extractor) walkExpr(e Expr) {
 	ex.budget.check(1)
+	start := len(ex.res.Conditions)
+	defer func() { ex.budget.check(1); ex.leaves[e] = conditionRange{start, len(ex.res.Conditions)} }()
+	previousGroup := ex.mergeGroup
+	if ex.mergeGroup == 0 && !ex.negated {
+		if binary, ok := unwrap(e).(*Binary); ok && binary.Op == "or" && safeAlternativeTree(e, ex.budget) {
+			ex.nextMergeGroup++
+			ex.mergeGroup = ex.nextMergeGroup
+		}
+	}
+	defer func() { ex.mergeGroup = previousGroup }()
 	switch v := e.(type) {
 	case *Binary:
 		switch v.Op {
@@ -586,6 +605,7 @@ func (ex *extractor) emit(c Condition) {
 	}
 	ex.budget.addOutput(textBytes)
 	ex.res.Conditions = append(ex.res.Conditions, c)
+	ex.mergeGroups = append(ex.mergeGroups, ex.mergeGroup)
 }
 
 // ---------------------------------------------------------------------------
@@ -777,10 +797,11 @@ var mergeableOperators = map[string]bool{
 // field/operator into a single condition with Alternatives, mirroring the
 // other parsers' behavior for `f == "a" or f == "b"`.
 
-func mergeOrAlternativesWithIndexMapBudget(conds []Condition, budget *parseBudget) ([]Condition, []int) {
+func mergeOrAlternativesWithIndexMapBudget(conds []Condition, budget *parseBudget, groups []int) ([]Condition, []int) {
 	if len(conds) < 2 {
 		return conds, nil
 	}
+	budget.addOutput(len(conds) * 8)
 	out := make([]Condition, 0, len(conds))
 	indexMap := make([]int, len(conds))
 	for i := range indexMap {
@@ -789,10 +810,10 @@ func mergeOrAlternativesWithIndexMapBudget(conds []Condition, budget *parseBudge
 	for i := 0; i < len(conds); i++ {
 		budget.check(1)
 		c := conds[i]
-		if i+1 < len(conds) && canMergeConditionAlternative(c, conds[i+1]) && canMergeAlternativeGroup(conds, i) {
+		if i+1 < len(conds) && canMergeConditionAlternative(c, conds[i+1]) && groups[i] != 0 && groups[i] == groups[i+1] {
 			alternatives := conditionAlternatives(c)
 			j := i + 1
-			for j < len(conds) && canMergeConditionAlternative(c, conds[j]) {
+			for j < len(conds) && groups[j] == groups[i] && canMergeConditionAlternative(c, conds[j]) {
 				budget.check(1)
 				alternatives = append(alternatives, conditionAlternatives(conds[j])...)
 				j++
@@ -804,9 +825,6 @@ func mergeOrAlternativesWithIndexMapBudget(conds []Condition, budget *parseBudge
 				for rawIndex := i; rawIndex < j; rawIndex++ {
 					indexMap[rawIndex] = mergedIndex
 				}
-				if j < len(conds) && strings.EqualFold(conds[j].LogicalOp, "OR") {
-					conds[j].LogicalOp = "AND"
-				}
 				i = j - 1
 				continue
 			}
@@ -817,15 +835,56 @@ func mergeOrAlternativesWithIndexMapBudget(conds []Condition, budget *parseBudge
 	return out, indexMap
 }
 
-func canMergeAlternativeGroup(conds []Condition, index int) bool {
-	if index == 0 || strings.EqualFold(conds[index].LogicalOp, "OR") {
+// safeAlternativeTree proves that every sibling in this positive OR group
+// is a direct-field atom with literal values. Unsupported atoms are barriers.
+func safeAlternativeTree(e Expr, budget *parseBudget) bool {
+	budget.check(1)
+	switch v := unwrap(e).(type) {
+	case *Binary:
+		if v.Op == "or" {
+			return safeAlternativeTree(v.L, budget) && safeAlternativeTree(v.R, budget)
+		}
+		if !mergeableOperators[v.Op] {
+			return false
+		}
+		_, lf := unwrap(v.L).(*Field)
+		_, rf := unwrap(v.R).(*Field)
+		return lf && literalOperand(v.R) || rf && literalOperand(v.L)
+	case *InExpr:
+		if _, ok := unwrap(v.X).(*Field); !ok || v.Negated {
+			return false
+		}
+		for _, item := range v.List {
+			budget.check(1)
+			if !literalOperand(item) {
+				return false
+			}
+		}
 		return true
+	case *PatternExpr:
+		if _, ok := unwrap(v.X).(*Field); !ok {
+			return false
+		}
+		for _, item := range v.Patterns {
+			budget.check(1)
+			if !literalOperand(item) {
+				return false
+			}
+		}
+		return true
+	default:
+		return false
 	}
-	j := index + 1
-	for j < len(conds) && canMergeConditionAlternative(conds[index], conds[j]) {
-		j++
+}
+func literalOperand(e Expr) bool {
+	switch v := unwrap(e).(type) {
+	case *Literal:
+		return true
+	case *Unary:
+		l, ok := unwrap(v.X).(*Literal)
+		return ok && l.Kind == LitNumber
 	}
-	return j == len(conds) || strings.EqualFold(conds[j].LogicalOp, "OR")
+	return false
 }
 
 func canMergeConditionAlternative(a, b Condition) bool {
@@ -836,7 +895,10 @@ func canMergeConditionAlternative(a, b Condition) bool {
 		!a.Negated &&
 		!b.Negated &&
 		a.CaseInsensitive == b.CaseInsensitive &&
-		a.Function == b.Function &&
+		a.Function == "" && b.Function == "" &&
+		a.IsOptional == b.IsOptional &&
+		slices.Equal(a.CoFields, b.CoFields) &&
+		a.FromMissing == b.FromMissing &&
 		a.EventCategory == b.EventCategory &&
 		a.SequenceStep == b.SequenceStep &&
 		a.PipeStage == b.PipeStage &&

@@ -27,12 +27,12 @@ func buildConditionExpression(query *Query, conditions []Condition) *ConditionEx
 }
 
 func buildConditionExpressionWithBudget(query *Query, conditions []Condition, budget *parseBudget) *ConditionExpression {
-	if query == nil || len(conditions) < 2 {
+	if query == nil || len(conditions) == 0 {
 		return nil
 	}
 	builder := &eqlExpressionBuilder{conditions: conditions, budget: budget}
 	expression := builder.query(query)
-	if expression != nil && builder.next == len(conditions) && expressionHasOperator(expression, BooleanOr) {
+	if expression != nil && builder.next == len(conditions) {
 		return expression
 	}
 	return nil
