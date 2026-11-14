@@ -11,6 +11,7 @@ import (
 // error tokens and messages in errs rather than aborting, so the parser can
 // recover and extract what it can.
 type lexer struct {
+	budget *parseBudget
 	input  string
 	pos    int
 	line   int
@@ -20,17 +21,24 @@ type lexer struct {
 }
 
 func newLexer(input string) *lexer {
-	l := &lexer{input: input, line: 1, col: 1}
+	return newLexerWithBudget(input, nil)
+}
+
+func newLexerWithBudget(input string, budget *parseBudget) *lexer {
+	l := &lexer{input: input, line: 1, col: 1, budget: budget}
 	l.run()
 	return l
 }
 
 func (l *lexer) errorf(line, col int, format string, args ...any) {
-	l.errs = append(l.errs, fmt.Sprintf("line %d:%d: %s", line, col, fmt.Sprintf(format, args...)))
+	message := fmt.Sprintf("line %d:%d: %s", line, col, fmt.Sprintf(format, args...))
+	l.budget.addOutput(len(message))
+	l.errs = append(l.errs, message)
 }
 
 // emit appends a token whose raw text spans [start, l.pos).
 func (l *lexer) emit(typ TokenType, start, startLine, startCol int, value string) {
+	l.budget.token()
 	l.tokens = append(l.tokens, Token{
 		Type:  typ,
 		Text:  l.input[start:l.pos],
@@ -43,6 +51,7 @@ func (l *lexer) emit(typ TokenType, start, startLine, startCol int, value string
 
 // advance moves past the byte (or rune) at l.pos, maintaining line/col.
 func (l *lexer) advance() {
+	l.budget.check(1)
 	if l.pos >= len(l.input) {
 		return
 	}

@@ -1,6 +1,7 @@
 package eql
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -26,7 +27,17 @@ var ErrInputTooLarge = errors.New("input exceeds maximum size")
 // still valid to inspect). Input is parsed as-is; use NormalizeQuery first
 // for content pasted from documents.
 func Parse(query string) (*Query, error) {
-	q, errs := parseTolerant(query)
+	return ParseContext(context.Background(), query)
+}
+
+// ParseContext is Parse with cooperative cancellation and per-call budgets.
+func ParseContext(ctx context.Context, query string) (q *Query, err error) {
+	defer func() {
+		if value := recover(); value != nil {
+			q, err = &Query{}, recoveredParseError(value)
+		}
+	}()
+	q, errs := parseTolerantWithBudget(query, newParseBudget(ctx))
 	if len(errs) > 0 {
 		return q, errors.New(strings.Join(errs, "; "))
 	}
@@ -36,11 +47,22 @@ func Parse(query string) (*Query, error) {
 // ParseExpression parses a standalone boolean expression (no event category,
 // sequences, or pipes).
 func ParseExpression(input string) (Expr, error) {
+	return ParseExpressionContext(context.Background(), input)
+}
+
+// ParseExpressionContext is ParseExpression with cooperative cancellation.
+func ParseExpressionContext(ctx context.Context, input string) (expression Expr, err error) {
+	defer func() {
+		if value := recover(); value != nil {
+			expression, err = nil, recoveredParseError(value)
+		}
+	}()
 	if len(input) > MaxInputSize {
 		return nil, ErrInputTooLarge
 	}
-	lex := newLexer(input)
-	p := &parser{toks: lex.tokens, errs: lex.errs}
+	budget := newParseBudget(ctx)
+	lex := newLexerWithBudget(input, budget)
+	p := &parser{toks: lex.tokens, errs: lex.errs, budget: budget}
 	if p.cur().Type == TokenEOF {
 		return nil, ErrEmptyQuery
 	}
@@ -56,11 +78,16 @@ func ParseExpression(input string) (Expr, error) {
 
 // parseTolerant runs the parser collecting every error instead of failing.
 func parseTolerant(query string) (*Query, []string) {
+	return parseTolerantWithBudget(query, nil)
+}
+
+func parseTolerantWithBudget(query string, budget *parseBudget) (*Query, []string) {
+	budget.check(0)
 	if len(query) > MaxInputSize {
 		return &Query{}, []string{ErrInputTooLarge.Error()}
 	}
-	lex := newLexer(query)
-	p := &parser{toks: lex.tokens, errs: lex.errs}
+	lex := newLexerWithBudget(query, budget)
+	p := &parser{toks: lex.tokens, errs: lex.errs, budget: budget}
 	if p.cur().Type == TokenEOF {
 		return &Query{}, []string{ErrEmptyQuery.Error()}
 	}
@@ -69,6 +96,7 @@ func parseTolerant(query string) (*Query, []string) {
 }
 
 type parser struct {
+	budget  *parseBudget
 	toks    []Token
 	pos     int
 	errs    []string
@@ -77,6 +105,7 @@ type parser struct {
 }
 
 func (p *parser) cur() Token {
+	p.budget.check(1)
 	// pos is maintained in [0, len(toks)-1]: next() never advances past the
 	// final EOF token, so this index is always valid.
 	return p.toks[p.pos]
@@ -115,7 +144,12 @@ func (p *parser) expect(typ TokenType) (Token, bool) {
 }
 
 func (p *parser) errorAt(t Token, format string, args ...any) {
-	p.errs = append(p.errs, fmt.Sprintf("line %d:%d: %s", t.Line, t.Col, fmt.Sprintf(format, args...)))
+	p.addError(fmt.Sprintf("line %d:%d: %s", t.Line, t.Col, fmt.Sprintf(format, args...)))
+}
+
+func (p *parser) addError(message string) {
+	p.budget.addOutput(len(message))
+	p.errs = append(p.errs, message)
 }
 
 func describeToken(t Token) string {
@@ -136,6 +170,7 @@ func describeToken(t Token) string {
 // ---------------------------------------------------------------------------
 
 func (p *parser) parseStatement() *Query {
+	p.budget.node()
 	q := &Query{}
 	switch p.cur().Type {
 	case TokenSequence:
@@ -162,6 +197,7 @@ func (p *parser) parseStatement() *Query {
 // tolerated) a bare boolean expression. inBrackets marks sequence-term and
 // lineage contexts, where a category is normally mandatory.
 func (p *parser) parseEventQuery(inBrackets bool) *EventQuery {
+	p.budget.node()
 	e := &EventQuery{}
 
 	// Category form requires `where` as the second token.
@@ -206,6 +242,7 @@ func (p *parser) parseEventQuery(inBrackets bool) *EventQuery {
 
 // parseSequence parses sequence/join/sample constructs, which share a shape.
 func (p *parser) parseSequence(kind SequenceKind) *Sequence {
+	p.budget.node()
 	s := &Sequence{Kind: kind}
 	p.next() // sequence/join/sample keyword
 
@@ -263,23 +300,23 @@ func (p *parser) validateSequence(s *Sequence) {
 		// multi-event sequence — the term matches N consecutive times.
 		singleWithRuns := len(s.Steps) == 1 && s.Steps[0].Runs >= 2
 		if len(s.Steps) < 2 && !singleWithRuns {
-			p.errs = append(p.errs, "sequence requires at least two events")
+			p.addError("sequence requires at least two events")
 		}
 		if missing > 0 {
 			if positive == 0 {
-				p.errs = append(p.errs, "sequence with missing events requires at least one positive event")
+				p.addError("sequence with missing events requires at least one positive event")
 			}
 			if s.MaxSpan == "" {
-				p.errs = append(p.errs, "sequence with missing events requires 'with maxspan'")
+				p.addError("sequence with missing events requires 'with maxspan'")
 			}
 		}
 	case KindJoin:
 		if len(s.Steps) < 2 {
-			p.errs = append(p.errs, "join requires at least two events")
+			p.addError("join requires at least two events")
 		}
 	case KindSample:
 		if len(s.Steps) < 2 {
-			p.errs = append(p.errs, "sample requires at least two events")
+			p.addError("sample requires at least two events")
 		}
 		if len(s.By) == 0 {
 			hasStepBy := false
@@ -290,7 +327,7 @@ func (p *parser) validateSequence(s *Sequence) {
 				}
 			}
 			if !hasStepBy {
-				p.errs = append(p.errs, "sample requires join keys ('by')")
+				p.addError("sample requires join keys ('by')")
 			}
 		}
 	}
@@ -300,7 +337,7 @@ func (p *parser) validateSequence(s *Sequence) {
 		first := len(s.By) + len(s.Steps[0].By)
 		for _, st := range s.Steps[1:] {
 			if len(s.By)+len(st.By) != first {
-				p.errs = append(p.errs, fmt.Sprintf("inconsistent join key count across %s events", s.Kind))
+				p.addError(fmt.Sprintf("inconsistent join key count across %s events", s.Kind))
 				break
 			}
 		}
@@ -308,6 +345,7 @@ func (p *parser) validateSequence(s *Sequence) {
 }
 
 func (p *parser) parseSequenceStep(kind SequenceKind) *SequenceStep {
+	p.budget.node()
 	st := &SequenceStep{}
 	switch p.cur().Type {
 	case TokenMissing:
@@ -476,6 +514,7 @@ func (p *parser) parsePipes() []*Pipe {
 			continue
 		}
 		p.next()
+		p.budget.node()
 		pipe := &Pipe{Name: strings.ToLower(nameTok.Value)}
 		for p.cur().Type != TokenPipe && p.cur().Type != TokenEOF && !p.tooDeep {
 			pipe.Args = append(pipe.Args, p.parseExpression())
@@ -553,7 +592,7 @@ func (p *parser) enter() bool {
 	if p.depth > maxExprDepth {
 		if !p.tooDeep {
 			p.tooDeep = true
-			p.errs = append(p.errs, "expression nesting too deep")
+			p.addError("expression nesting too deep")
 		}
 		return false
 	}
@@ -576,6 +615,7 @@ func (p *parser) parseOr() Expr {
 	for p.cur().Type == TokenOr && !p.tooDeep {
 		p.next()
 		right := p.parseAnd()
+		p.budget.node()
 		left = &Binary{Op: "or", L: left, R: right}
 	}
 	return left
@@ -586,6 +626,7 @@ func (p *parser) parseAnd() Expr {
 	for p.cur().Type == TokenAnd && !p.tooDeep {
 		p.next()
 		right := p.parseNot()
+		p.budget.node()
 		left = &Binary{Op: "and", L: left, R: right}
 	}
 	return left
@@ -602,6 +643,7 @@ func (p *parser) parseNot() Expr {
 		}
 		defer p.leave()
 		p.next()
+		p.budget.node()
 		return &Not{X: p.parseNot()}
 	}
 	return p.parsePredicated()
@@ -617,12 +659,14 @@ func (p *parser) parsePredicated() Expr {
 			insensitive := p.cur().Type == TokenInTilde
 			p.next()
 			list := p.parseParenList()
+			p.budget.node()
 			return &InExpr{X: v, List: list, Negated: true, Insensitive: insensitive}
 		}
 	case TokenIn, TokenInTilde:
 		insensitive := p.cur().Type == TokenInTilde
 		p.next()
 		list := p.parseParenList()
+		p.budget.node()
 		return &InExpr{X: v, List: list, Insensitive: insensitive}
 	case TokenColon:
 		p.next()
@@ -640,6 +684,7 @@ func (p *parser) parsePredicated() Expr {
 }
 
 func (p *parser) parsePatternRHS(kind PatternKind, insensitive bool, x Expr) Expr {
+	p.budget.node()
 	pe := &PatternExpr{Kind: kind, X: x, Insensitive: insensitive}
 	if p.cur().Type == TokenLParen {
 		p.next()
@@ -655,7 +700,7 @@ func (p *parser) parsePatternRHS(kind PatternKind, insensitive bool, x Expr) Exp
 			p.accept(TokenRParen)
 		}
 		if len(pe.Patterns) == 0 {
-			p.errs = append(p.errs, fmt.Sprintf("empty pattern list for %q", string(kind)))
+			p.addError(fmt.Sprintf("empty pattern list for %q", string(kind)))
 		}
 		return pe
 	}
@@ -693,7 +738,7 @@ func (p *parser) parseParenList() []Expr {
 		p.accept(TokenRParen)
 	}
 	if len(list) == 0 {
-		p.errs = append(p.errs, "empty list in 'in' expression")
+		p.addError("empty list in 'in' expression")
 	}
 	return list
 }
@@ -722,6 +767,7 @@ func (p *parser) parseComparison() Expr {
 	}
 	p.next()
 	right := p.parseAdditive()
+	p.budget.node()
 	cmp := &Binary{Op: op, L: left, R: right}
 
 	// Comparison chaining (a < b <= c) is invalid EQL; note it but keep
@@ -731,6 +777,8 @@ func (p *parser) parseComparison() Expr {
 		p.errorAt(p.cur(), "comparison chaining is not supported; use 'and'")
 		opTok := p.next()
 		right2 := p.parseAdditive()
+		p.budget.node()
+		p.budget.node()
 		return &Binary{Op: "and", L: cmp, R: &Binary{Op: opTok.Value, L: right, R: right2}}
 	}
 	return cmp
@@ -750,6 +798,7 @@ func (p *parser) parseAdditive() Expr {
 		}
 		p.next()
 		right := p.parseMultiplicative()
+		p.budget.node()
 		left = &Binary{Op: op, L: left, R: right}
 	}
 	return left
@@ -771,6 +820,7 @@ func (p *parser) parseMultiplicative() Expr {
 		}
 		p.next()
 		right := p.parseUnary()
+		p.budget.node()
 		left = &Binary{Op: op, L: left, R: right}
 	}
 	return left
@@ -785,6 +835,7 @@ func (p *parser) parseUnary() Expr {
 		}
 		defer p.leave()
 		p.next()
+		p.budget.node()
 		return &Unary{Op: "-", X: p.parseUnary()}
 	case TokenPlus:
 		if !p.enter() {
@@ -793,12 +844,14 @@ func (p *parser) parseUnary() Expr {
 		}
 		defer p.leave()
 		p.next()
+		p.budget.node()
 		return &Unary{Op: "+", X: p.parseUnary()}
 	}
 	return p.parsePrimary()
 }
 
 func (p *parser) parsePrimary() Expr {
+	p.budget.node()
 	if p.tooDeep {
 		return &BadExpr{}
 	}

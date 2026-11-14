@@ -1,5 +1,7 @@
 package eql
 
+import "context"
+
 // SemanticQuery is the parser-owned semantic view of an EQL query.
 // It resolves parser output into stable condition-bearing nodes so callers do
 // not need to understand parser internals or condition indexes.
@@ -46,33 +48,63 @@ type SemanticSequenceStep struct {
 
 // AnalyzeQuery parses an EQL query and returns the parser-owned semantic model.
 func AnalyzeQuery(query string) *SemanticQuery {
-	return semanticFromExtraction(ExtractConditions(query))
+	return AnalyzeQueryContext(context.Background(), query)
+}
+
+// AnalyzeQueryContext shares one cooperative deadline and resource budget
+// across extraction, semantic expressions, and sequence-subquery conversion.
+func AnalyzeQueryContext(ctx context.Context, query string) *SemanticQuery {
+	ctx, cancel := context.WithTimeout(ctx, MaxParseTime)
+	defer cancel()
+	return analyzeWithBudget(query, newParseBudget(ctx))
+}
+
+func analyzeWithBudget(query string, budget *parseBudget) (semantic *SemanticQuery) {
+	defer func() {
+		if value := recover(); value != nil {
+			semantic = &SemanticQuery{Errors: []string{recoveredParseError(value).Error()}}
+		}
+	}()
+	result := extractWithBudget(query, budget)
+	semantic = semanticFromExtractionWithBudget(result, budget)
+	budget.check(0)
+	return semantic
 }
 
 // semanticFromExtraction normalizes parser extraction output into the
 // parser-owned semantic model.
 func semanticFromExtraction(result *ParseResult) *SemanticQuery {
+	return semanticFromExtractionWithBudget(result, nil)
+}
+
+func semanticFromExtractionWithBudget(result *ParseResult, budget *parseBudget) *SemanticQuery {
+	budget.node()
 	if result == nil {
 		return nil
 	}
 	semantic := &SemanticQuery{
-		Conditions:      cloneSemanticConditions(result.Conditions),
-		EventCategories: cloneSemanticStrings(result.EventCategories),
-		Sequence:        semanticSequenceFromParseSequence(result.Sequence),
-		Pipes:           cloneSemanticPipes(result.Pipes),
-		Commands:        cloneSemanticStrings(result.Commands),
-		Fields:          cloneSemanticStrings(result.Fields),
-		JoinKeys:        cloneSemanticStrings(result.JoinKeys),
-		Errors:          cloneSemanticStrings(result.Errors),
+		Conditions:      cloneSemanticConditionsWithBudget(result.Conditions, budget),
+		EventCategories: cloneSemanticStringsWithBudget(result.EventCategories, budget),
+		Sequence:        semanticSequenceFromParseSequenceWithBudget(result.Sequence, budget),
+		Pipes:           cloneSemanticPipesWithBudget(result.Pipes, budget),
+		Commands:        cloneSemanticStringsWithBudget(result.Commands, budget),
+		Fields:          cloneSemanticStringsWithBudget(result.Fields, budget),
+		JoinKeys:        cloneSemanticStringsWithBudget(result.JoinKeys, budget),
+		Errors:          cloneSemanticStringsWithBudget(result.Errors, budget),
 	}
-	semantic.Expression = semanticExpressionFromParseExpression(result.Expression, semantic.Conditions)
+	semantic.Expression = semanticExpressionFromParseExpressionWithBudget(result.Expression, semantic.Conditions, budget)
 	if semantic.Expression == nil {
-		semantic.Expression = semanticExpressionFromConditions(semantic.Conditions)
+		semantic.Expression = semanticExpressionFromConditionsWithBudget(semantic.Conditions, budget)
 	}
 	return semantic
 }
 
 func semanticExpressionFromParseExpression(expression *ConditionExpression, conditions []Condition) *SemanticExpression {
+	return semanticExpressionFromParseExpressionWithBudget(expression, conditions, nil)
+}
+
+func semanticExpressionFromParseExpressionWithBudget(expression *ConditionExpression, conditions []Condition, budget *parseBudget) *SemanticExpression {
+	budget.node()
 	if expression == nil {
 		return nil
 	}
@@ -88,7 +120,7 @@ func semanticExpressionFromParseExpression(expression *ConditionExpression, cond
 	case BooleanAnd, BooleanOr:
 		converted := &SemanticExpression{Operator: expression.Operator}
 		for _, child := range expression.Children {
-			childExpression := semanticExpressionFromParseExpression(child, conditions)
+			childExpression := semanticExpressionFromParseExpressionWithBudget(child, conditions, budget)
 			if childExpression == nil {
 				return nil
 			}
@@ -104,11 +136,17 @@ func semanticExpressionFromParseExpression(expression *ConditionExpression, cond
 }
 
 func semanticExpressionFromConditions(conditions []Condition) *SemanticExpression {
+	return semanticExpressionFromConditionsWithBudget(conditions, nil)
+}
+
+func semanticExpressionFromConditionsWithBudget(conditions []Condition, budget *parseBudget) *SemanticExpression {
+	budget.node()
 	if len(conditions) == 0 {
 		return nil
 	}
 	var expression *SemanticExpression
 	for index := range conditions {
+		budget.node()
 		leaf := &SemanticExpression{Operator: BooleanCondition, Condition: &conditions[index]}
 		if expression == nil {
 			expression = leaf
@@ -118,6 +156,7 @@ func semanticExpressionFromConditions(conditions []Condition) *SemanticExpressio
 		if conditions[index].LogicalOp == "OR" {
 			operator = BooleanOr
 		}
+		budget.node()
 		expression = combineSemanticExpressions(operator, expression, leaf)
 	}
 	return expression
@@ -130,11 +169,9 @@ func combineSemanticExpressions(operator BooleanOperator, left, right *SemanticE
 	if right == nil {
 		return left
 	}
-	combined := &SemanticExpression{Operator: operator}
-	if left.Operator == operator && left.Condition == nil {
-		combined.Children = append(combined.Children, left.Children...)
-	} else {
-		combined.Children = append(combined.Children, left)
+	combined := left
+	if left.Operator != operator || left.Condition != nil {
+		combined = &SemanticExpression{Operator: operator, Children: []*SemanticExpression{left}}
 	}
 	if right.Operator == operator && right.Condition == nil {
 		combined.Children = append(combined.Children, right.Children...)
@@ -145,6 +182,11 @@ func combineSemanticExpressions(operator BooleanOperator, left, right *SemanticE
 }
 
 func semanticSequenceFromParseSequence(sequence *SequenceInfo) *SemanticSequence {
+	return semanticSequenceFromParseSequenceWithBudget(sequence, nil)
+}
+
+func semanticSequenceFromParseSequenceWithBudget(sequence *SequenceInfo, budget *parseBudget) *SemanticSequence {
+	budget.node()
 	if sequence == nil {
 		return nil
 	}
@@ -152,65 +194,96 @@ func semanticSequenceFromParseSequence(sequence *SequenceInfo) *SemanticSequence
 		Kind:      sequence.Kind,
 		MaxSpan:   sequence.MaxSpan,
 		MaxSpanMS: sequence.MaxSpanMS,
-		ByFields:  cloneSemanticStrings(sequence.ByFields),
-		Steps:     semanticSequenceStepsFromParseSteps(sequence.Steps),
-		Until:     semanticSequenceStepFromParseStep(sequence.Until),
+		ByFields:  cloneSemanticStringsWithBudget(sequence.ByFields, budget),
+		Steps:     semanticSequenceStepsFromParseStepsWithBudget(sequence.Steps, budget),
+		Until:     semanticSequenceStepFromParseStepWithBudget(sequence.Until, budget),
 	}
 }
 
 func semanticSequenceStepsFromParseSteps(steps []SequenceStepInfo) []SemanticSequenceStep {
+	return semanticSequenceStepsFromParseStepsWithBudget(steps, nil)
+}
+
+func semanticSequenceStepsFromParseStepsWithBudget(steps []SequenceStepInfo, budget *parseBudget) []SemanticSequenceStep {
+	budget.check(1)
 	if len(steps) == 0 {
 		return nil
 	}
 	out := make([]SemanticSequenceStep, 0, len(steps))
 	for i := range steps {
-		out = append(out, *semanticSequenceStepFromParseStep(&steps[i]))
+		out = append(out, *semanticSequenceStepFromParseStepWithBudget(&steps[i], budget))
 	}
 	return out
 }
 
 func semanticSequenceStepFromParseStep(step *SequenceStepInfo) *SemanticSequenceStep {
+	return semanticSequenceStepFromParseStepWithBudget(step, nil)
+}
+
+func semanticSequenceStepFromParseStepWithBudget(step *SequenceStepInfo, budget *parseBudget) *SemanticSequenceStep {
+	budget.node()
 	if step == nil {
 		return nil
 	}
 	return &SemanticSequenceStep{
 		EventCategory:  step.EventCategory,
-		ByFields:       cloneSemanticStrings(step.ByFields),
+		ByFields:       cloneSemanticStringsWithBudget(step.ByFields, budget),
 		Runs:           step.Runs,
 		Missing:        step.Missing,
 		ConditionCount: step.ConditionCount,
-		Subquery:       semanticFromExtraction(step.Subquery),
+		Subquery:       semanticFromExtractionWithBudget(step.Subquery, budget),
 	}
 }
 
 func cloneSemanticConditions(conditions []Condition) []Condition {
+	return cloneSemanticConditionsWithBudget(conditions, nil)
+}
+
+func cloneSemanticConditionsWithBudget(conditions []Condition, budget *parseBudget) []Condition {
+	budget.check(1)
 	if len(conditions) == 0 {
 		return nil
 	}
 	out := make([]Condition, len(conditions))
 	for i, condition := range conditions {
+		budget.node()
+		budget.addOutput(len(condition.Field) + len(condition.Operator) + len(condition.Value) + len(condition.EventCategory) + len(condition.LogicalOp) + len(condition.Function) + len(condition.Lineage))
 		out[i] = condition
-		out[i].Alternatives = cloneSemanticStrings(condition.Alternatives)
-		out[i].CoFields = cloneSemanticStrings(condition.CoFields)
+		out[i].Alternatives = cloneSemanticStringsWithBudget(condition.Alternatives, budget)
+		out[i].CoFields = cloneSemanticStringsWithBudget(condition.CoFields, budget)
 	}
 	return out
 }
 
 func cloneSemanticPipes(pipes []PipeInfo) []PipeInfo {
+	return cloneSemanticPipesWithBudget(pipes, nil)
+}
+
+func cloneSemanticPipesWithBudget(pipes []PipeInfo, budget *parseBudget) []PipeInfo {
+	budget.check(1)
 	if len(pipes) == 0 {
 		return nil
 	}
 	out := make([]PipeInfo, len(pipes))
 	for i, pipe := range pipes {
+		budget.addOutput(len(pipe.Name))
 		out[i] = pipe
-		out[i].Args = cloneSemanticStrings(pipe.Args)
+		out[i].Args = cloneSemanticStringsWithBudget(pipe.Args, budget)
 	}
 	return out
 }
 
 func cloneSemanticStrings(values []string) []string {
+	return cloneSemanticStringsWithBudget(values, nil)
+}
+
+func cloneSemanticStringsWithBudget(values []string, budget *parseBudget) []string {
+	budget.check(1)
 	if len(values) == 0 {
 		return nil
+	}
+	for _, value := range values {
+		budget.addOutput(len(value))
 	}
 	return append([]string(nil), values...)
 }

@@ -1,5 +1,10 @@
 package eql
 
+import (
+	"strconv"
+	"strings"
+)
+
 // BooleanOperator represents parsed boolean expression operators.
 type BooleanOperator string
 
@@ -18,10 +23,14 @@ type ConditionExpression struct {
 }
 
 func buildConditionExpression(query *Query, conditions []Condition) *ConditionExpression {
+	return buildConditionExpressionWithBudget(query, conditions, nil)
+}
+
+func buildConditionExpressionWithBudget(query *Query, conditions []Condition, budget *parseBudget) *ConditionExpression {
 	if query == nil || len(conditions) < 2 {
 		return nil
 	}
-	builder := &eqlExpressionBuilder{conditions: conditions}
+	builder := &eqlExpressionBuilder{conditions: conditions, budget: budget}
 	expression := builder.query(query)
 	if expression != nil && builder.next == len(conditions) && expressionHasOperator(expression, BooleanOr) {
 		return expression
@@ -30,6 +39,7 @@ func buildConditionExpression(query *Query, conditions []Condition) *ConditionEx
 }
 
 type eqlExpressionBuilder struct {
+	budget     *parseBudget
 	conditions []Condition
 	next       int
 }
@@ -58,6 +68,7 @@ func (b *eqlExpressionBuilder) eventQuery(query *EventQuery) *ConditionExpressio
 }
 
 func (b *eqlExpressionBuilder) expr(expr Expr, negated bool) *ConditionExpression {
+	b.budget.node()
 	switch typed := unwrap(expr).(type) {
 	case *Binary:
 		switch typed.Op {
@@ -87,17 +98,17 @@ func (b *eqlExpressionBuilder) expr(expr Expr, negated bool) *ConditionExpressio
 	case *Unary:
 		return b.expr(typed.X, negated)
 	case *InExpr:
-		if primary, _ := primaryField(typed.X); primary == nil {
+		if primary, _ := primaryFieldWithBudget(typed.X, b.budget); primary == nil {
 			return nil
 		}
 		return b.condition()
 	case *PatternExpr:
-		if primary, _ := primaryField(typed.X); primary == nil {
+		if primary, _ := primaryFieldWithBudget(typed.X, b.budget); primary == nil {
 			return nil
 		}
 		return b.condition()
 	case *Call:
-		if primary, _ := primaryField(&Paren{X: argsAsExpr(typed)}); primary == nil {
+		if primary, _ := primaryFieldWithBudget(&Paren{X: argsAsExpr(typed)}, b.budget); primary == nil {
 			return nil
 		}
 		return b.condition()
@@ -120,6 +131,7 @@ func comparisonEmitsCondition(binary *Binary) bool {
 }
 
 func (b *eqlExpressionBuilder) condition() *ConditionExpression {
+	b.budget.node()
 	if b.next >= len(b.conditions) {
 		return nil
 	}
@@ -129,33 +141,87 @@ func (b *eqlExpressionBuilder) condition() *ConditionExpression {
 }
 
 func remapConditionExpression(expression *ConditionExpression, indexMap []int) *ConditionExpression {
+	return remapConditionExpressionWithBudget(expression, indexMap, nil)
+}
+
+func remapConditionExpressionWithBudget(expression *ConditionExpression, indexMap []int, budget *parseBudget) *ConditionExpression {
 	if expression == nil || len(indexMap) == 0 {
 		return expression
 	}
+	remapper := &conditionExpressionRemapper{indexMap: indexMap, budget: budget, ids: map[*ConditionExpression]int{}, interned: map[string]int{}}
+	return remapper.remap(expression)
+}
+
+type conditionExpressionRemapper struct {
+	indexMap []int
+	budget   *parseBudget
+	ids      map[*ConditionExpression]int
+	interned map[string]int
+}
+
+// identity interns a node's operator and direct child identities. Each edge is
+// encoded once, so duplicate detection does not rescan earlier subtrees.
+func (r *conditionExpressionRemapper) identity(expression *ConditionExpression) int {
+	if id, ok := r.ids[expression]; ok {
+		return id
+	}
+	var key strings.Builder
+	key.WriteString(string(expression.Operator))
+	key.WriteByte(':')
+	key.WriteString(strconv.Itoa(expression.ConditionIndex))
+	for _, child := range expression.Children {
+		r.budget.check(1)
+		key.WriteByte(',')
+		key.WriteString(strconv.Itoa(r.identity(child)))
+	}
+	text := key.String()
+	id, ok := r.interned[text]
+	if !ok {
+		id = len(r.interned) + 1
+		r.interned[text] = id
+	}
+	r.ids[expression] = id
+	return id
+}
+
+func (r *conditionExpressionRemapper) remap(expression *ConditionExpression) *ConditionExpression {
+	r.budget.node()
+	if expression == nil {
+		return nil
+	}
 	switch expression.Operator {
 	case BooleanCondition:
-		if expression.ConditionIndex < 0 || expression.ConditionIndex >= len(indexMap) {
+		if expression.ConditionIndex < 0 || expression.ConditionIndex >= len(r.indexMap) {
 			return nil
 		}
-		mapped := indexMap[expression.ConditionIndex]
+		mapped := r.indexMap[expression.ConditionIndex]
 		if mapped < 0 {
 			return nil
 		}
 		return &ConditionExpression{Operator: BooleanCondition, ConditionIndex: mapped}
 	case BooleanAnd, BooleanOr:
 		converted := &ConditionExpression{Operator: expression.Operator}
+		seen := map[int]bool{}
+		appendChild := func(child *ConditionExpression) {
+			r.budget.check(1)
+			id := r.identity(child)
+			if !seen[id] {
+				seen[id] = true
+				converted.Children = append(converted.Children, child)
+			}
+		}
 		for _, child := range expression.Children {
-			remapped := remapConditionExpression(child, indexMap)
+			remapped := r.remap(child)
 			if remapped == nil {
 				continue
 			}
 			if remapped.Operator == expression.Operator {
 				for _, grandchild := range remapped.Children {
-					converted.Children = appendUniqueConditionExpression(converted.Children, grandchild)
+					appendChild(grandchild)
 				}
-				continue
+			} else {
+				appendChild(remapped)
 			}
-			converted.Children = appendUniqueConditionExpression(converted.Children, remapped)
 		}
 		if len(converted.Children) == 0 {
 			return nil
@@ -200,11 +266,11 @@ func combineConditionExpressions(operator BooleanOperator, left, right *Conditio
 	if right == nil {
 		return left
 	}
-	combined := &ConditionExpression{Operator: operator}
-	if left.Operator == operator {
-		combined.Children = append(combined.Children, left.Children...)
-	} else {
-		combined.Children = append(combined.Children, left)
+	// Both inputs are newly built, owned expression trees. Reuse the left
+	// group so a flat chain grows one slice instead of copying every prefix.
+	combined := left
+	if left.Operator != operator {
+		combined = &ConditionExpression{Operator: operator, Children: []*ConditionExpression{left}}
 	}
 	if right.Operator == operator {
 		combined.Children = append(combined.Children, right.Children...)

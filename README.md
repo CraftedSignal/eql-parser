@@ -33,8 +33,8 @@ fuzzed and mutated inputs.
 - **Permissive legacy acceptance**: single-quoted strings, `=` equality,
   `child of` / `descendant of` / `event of` lineage, and `?"raw"` strings from
   Endgame-era rules.
-- **Robust by construction**: never panics, never hangs (`MaxParseTime`
-  watchdog), bounded input and nesting, and graceful error recovery that still
+- **Bounded processing**: synchronous parsing with per-call input, token, node,
+  work, condition, output, and nesting limits, cooperative deadlines, and recovery that still
   extracts what it can.
 - **Input normalization**: smart quotes, zero-width characters, markdown code
   fences, and JSON-escaped newlines from copy-pasted or extracted rules.
@@ -101,6 +101,10 @@ fmt.Println(q.String()) // canonical re-rendering (round-trips)
 | Function | Description |
 |----------|-------------|
 | `ExtractConditions(query) *ParseResult` | Full extraction: conditions, sequence info, pipes, fields, errors. Never panics. |
+| `ExtractConditionsContext(ctx, query) *ParseResult` | Extraction with caller cancellation and a cooperative deadline. |
+| `AnalyzeQueryContext(ctx, query) *SemanticQuery` | Semantic analysis under the same extraction/conversion budget. |
+| `ParseContext(ctx, query) (*Query, error)` | AST parsing with cancellation and resource bounds. |
+| `ParseExpressionContext(ctx, input) (Expr, error)` | Standalone expression parsing with cancellation and resource bounds. |
 | `Parse(query) (*Query, error)` | Parse to an AST with round-trippable `String()`. |
 | `ParseExpression(input) (Expr, error)` | Parse a standalone boolean expression. |
 | `NormalizeQuery(query) string` | Clean up pasted/extracted query text. |
@@ -111,6 +115,19 @@ fmt.Println(q.String()) // canonical re-rendering (round-trips)
 | `HasComplexWhereConditions(result) bool` | Any pattern/list/function operator is used. |
 | `GetEventTypeFromConditions(result) string` | Canonical event type (e.g. `windows_4688`) from an event-code condition. |
 | `MaxSpanDuration(span) (int64, bool)` | Convert a `maxspan` value to milliseconds. |
+
+`ExtractConditions` and `AnalyzeQuery` use `MaxParseTime` (default 5 seconds)
+as a cooperative deadline. No parsing goroutine continues after they return.
+Cancellation is checked during lexing, parsing, extraction, and semantic
+conversion, and before/after bounded normalization and expression rendering;
+these checkpoints do not provide hard wall-clock preemption.
+
+The 1 MiB input limit is supplemented by per-call limits of 32,768 tokens,
+32,768 AST/expression nodes, 4,096 emitted conditions (including step
+subqueries), 4 MiB of accounted output text/structure, and 4,194,304 work
+units. Extraction and semantic conversion share these budgets. Resource or
+cancellation failure returns an error with no partial conditions or semantic
+tree. Ordinary syntax errors still support best-effort extraction.
 
 `ParseResult` carries `Conditions`, `EventCategories`, `Sequence`, `Pipes`,
 `Commands`, `Fields`, `JoinKeys` (also via `GroupByFields()`), and `Errors`.
