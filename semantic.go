@@ -135,10 +135,6 @@ func semanticExpressionFromParseExpressionWithBudget(expression *ConditionExpres
 	}
 }
 
-func semanticExpressionFromConditions(conditions []Condition) *SemanticExpression {
-	return semanticExpressionFromConditionsWithBudget(conditions, nil)
-}
-
 func semanticExpressionFromConditionsWithBudget(conditions []Condition, budget *parseBudget) *SemanticExpression {
 	budget.node()
 	if len(conditions) == 0 {
@@ -179,10 +175,6 @@ func combineSemanticExpressions(operator BooleanOperator, left, right *SemanticE
 		combined.Children = append(combined.Children, right)
 	}
 	return combined
-}
-
-func semanticSequenceFromParseSequence(sequence *SequenceInfo) *SemanticSequence {
-	return semanticSequenceFromParseSequenceWithBudget(sequence, nil)
 }
 
 func semanticSequenceFromParseSequenceWithBudget(sequence *SequenceInfo, budget *parseBudget) *SemanticSequence {
@@ -235,10 +227,6 @@ func semanticSequenceStepFromParseStepWithBudget(step *SequenceStepInfo, budget 
 	}
 }
 
-func cloneSemanticConditions(conditions []Condition) []Condition {
-	return cloneSemanticConditionsWithBudget(conditions, nil)
-}
-
 func cloneSemanticConditionsWithBudget(conditions []Condition, budget *parseBudget) []Condition {
 	budget.check(1)
 	if len(conditions) == 0 {
@@ -255,10 +243,6 @@ func cloneSemanticConditionsWithBudget(conditions []Condition, budget *parseBudg
 	return out
 }
 
-func cloneSemanticPipes(pipes []PipeInfo) []PipeInfo {
-	return cloneSemanticPipesWithBudget(pipes, nil)
-}
-
 func cloneSemanticPipesWithBudget(pipes []PipeInfo, budget *parseBudget) []PipeInfo {
 	budget.check(1)
 	if len(pipes) == 0 {
@@ -271,10 +255,6 @@ func cloneSemanticPipesWithBudget(pipes []PipeInfo, budget *parseBudget) []PipeI
 		out[i].Args = cloneSemanticStringsWithBudget(pipe.Args, budget)
 	}
 	return out
-}
-
-func cloneSemanticStrings(values []string) []string {
-	return cloneSemanticStringsWithBudget(values, nil)
 }
 
 func cloneSemanticStringsWithBudget(values []string, budget *parseBudget) []string {

@@ -77,9 +77,6 @@ func ParseExpressionContext(ctx context.Context, input string) (expression Expr,
 }
 
 // parseTolerant runs the parser collecting every error instead of failing.
-func parseTolerant(query string) (*Query, []string) {
-	return parseTolerantWithBudget(query, nil)
-}
 
 func parseTolerantWithBudget(query string, budget *parseBudget) (*Query, []string) {
 	budget.check(0)

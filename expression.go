@@ -235,15 +235,6 @@ func (r *conditionExpressionRemapper) remap(expression *ConditionExpression) *Co
 	}
 }
 
-func appendUniqueConditionExpression(children []*ConditionExpression, child *ConditionExpression) []*ConditionExpression {
-	for _, existing := range children {
-		if equalConditionExpression(existing, child) {
-			return children
-		}
-	}
-	return append(children, child)
-}
-
 func equalConditionExpression(a, b *ConditionExpression) bool {
 	if a == nil || b == nil {
 		return a == b

@@ -100,10 +100,6 @@ func ExtractConditionsContext(ctx context.Context, query string) *ParseResult {
 	return extractWithBudget(query, newParseBudget(ctx))
 }
 
-func extractConditions(query string) *ParseResult {
-	return extractWithBudget(query, newParseBudget(context.Background()))
-}
-
 func extractWithBudget(query string, budget *parseBudget) (res *ParseResult) {
 	defer func() {
 		if value := recover(); value != nil {
@@ -454,9 +450,6 @@ func (ex *extractor) emitComparison(op string, l, r Expr) {
 // coFields returns every field referenced across both sides of a comparison
 // except the primary field and (when the RHS is itself a field) the value
 // field, in source order with duplicates removed.
-func coFields(l, r Expr, primary, value string) []string {
-	return coFieldsWithBudget(l, r, primary, value, nil)
-}
 
 func coFieldsWithBudget(l, r Expr, primary, value string, budget *parseBudget) []string {
 	nodes := append(collectFieldNodesWithBudget(l, budget), collectFieldNodesWithBudget(r, budget)...)
@@ -649,9 +642,6 @@ func canonicalFunction(name string) string {
 
 // collectFieldNodes returns every Field node in an expression, in source
 // order.
-func collectFieldNodes(e Expr) []*Field {
-	return collectFieldNodesWithBudget(e, nil)
-}
 
 func collectFieldNodesWithBudget(e Expr, budget *parseBudget) []*Field {
 	var out []*Field
@@ -786,14 +776,6 @@ var mergeableOperators = map[string]bool{
 // mergeOrAlternatives folds runs of OR-connected conditions on the same
 // field/operator into a single condition with Alternatives, mirroring the
 // other parsers' behavior for `f == "a" or f == "b"`.
-func mergeOrAlternatives(conds []Condition) []Condition {
-	merged, _ := mergeOrAlternativesWithIndexMap(conds)
-	return merged
-}
-
-func mergeOrAlternativesWithIndexMap(conds []Condition) ([]Condition, []int) {
-	return mergeOrAlternativesWithIndexMapBudget(conds, nil)
-}
 
 func mergeOrAlternativesWithIndexMapBudget(conds []Condition, budget *parseBudget) ([]Condition, []int) {
 	if len(conds) < 2 {
