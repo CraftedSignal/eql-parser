@@ -771,7 +771,7 @@ func TestExtractOversizedInput(t *testing.T) {
 }
 
 func TestExtractDeepNesting(t *testing.T) {
-	q := "process where " + strings.Repeat("(", 5000) + `a == "1"` + strings.Repeat(")", 5000)
+	q := "process where " + strings.Repeat("(", maxExprDepth+1) + `a == "1"` + strings.Repeat(")", maxExprDepth+1)
 	res := ExtractConditions(q)
 	if res == nil {
 		t.Fatal("nil result")

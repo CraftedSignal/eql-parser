@@ -1,22 +1,23 @@
 package eql
 
 import (
+	"context"
 	"strings"
 	"testing"
-	"time"
 )
 
 // This file drives the remaining defensive, recovery, and depth-limit branches
 // to complete statement coverage. Several are white-box tests of unexported
-// helpers or use the extractHook seam, because the corresponding paths cannot
-// be reached with well-formed input.
+// helpers, because the corresponding paths cannot be reached with well-formed input.
 
-// --- Panic recovery and timeout (via the extractHook seam) ---
+// --- Panic recovery and cooperative timeout ---
+
+type panickingContext struct{ context.Context }
+
+func (panickingContext) Err() error { panic("boom") }
 
 func TestExtractPanicRecovery(t *testing.T) {
-	extractHook = func(string) { panic("boom") }
-	defer func() { extractHook = nil }()
-	res := ExtractConditions(`process where a == 1`)
+	res := extractWithBudget(`process where a == 1`, newParseBudget(panickingContext{context.Background()}))
 	if len(res.Errors) == 0 || !strings.Contains(res.Errors[0], "parser panic") {
 		t.Fatalf("expected panic recovery, got %v", res.Errors)
 	}
@@ -26,25 +27,17 @@ func TestExtractPanicRecovery(t *testing.T) {
 }
 
 func TestExtractTimeout(t *testing.T) {
-	// A genuinely large input takes far longer than the tiny deadline to
-	// parse, so the timeout branch fires deterministically. No hook is used,
-	// so the abandoned parse goroutine touches only immutable package state
-	// (race-free with the rest of the suite).
+	// An already-expired deadline exercises timeout handling with normal,
+	// tiny input. Parsing runs synchronously and cannot survive this return.
 	old := MaxParseTime
-	MaxParseTime = 1 * time.Millisecond
+	MaxParseTime = 0
 	defer func() { MaxParseTime = old }()
-
-	var b strings.Builder
-	b.WriteString("process where ")
-	for i := 0; i < 40000; i++ {
-		if i > 0 {
-			b.WriteString(" and ")
-		}
-		b.WriteString(`a == "x"`)
-	}
-	res := ExtractConditions(b.String())
+	res := ExtractConditions(`process where process.name == "editor"`)
 	if len(res.Errors) == 0 || !strings.Contains(res.Errors[0], "timeout") {
 		t.Fatalf("expected timeout, got %v", res.Errors)
+	}
+	if len(res.Conditions) != 0 {
+		t.Fatal("timeout returned partial conditions")
 	}
 }
 
@@ -71,9 +64,9 @@ func TestParseInputTooLarge(t *testing.T) {
 func TestDeepNestingErrors(t *testing.T) {
 	rep := func(s string, k int) string { return strings.Repeat(s, k) }
 	for _, q := range []string{
-		`process where ` + rep("not ", 5000) + `a == 1`,
-		`process where ` + rep("(", 5000) + "a == 1" + rep(")", 5000),
-		`process where ` + rep("f(", 5000) + "x" + rep(")", 5000),
+		`process where ` + rep("not ", maxExprDepth+1) + `a == 1`,
+		`process where ` + rep("(", maxExprDepth+1) + "a == 1" + rep(")", maxExprDepth+1),
+		`process where ` + rep("f(", maxExprDepth+1) + "x" + rep(")", maxExprDepth+1),
 	} {
 		res := ExtractConditions(q)
 		if res == nil || res.Conditions == nil {
