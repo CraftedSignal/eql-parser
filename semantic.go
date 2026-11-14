@@ -1,6 +1,9 @@
 package eql
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // SemanticQuery is the parser-owned semantic view of an EQL query.
 // It resolves parser output into stable condition-bearing nodes so callers do
@@ -114,9 +117,10 @@ func semanticExpressionFromParseExpressionWithBudget(expression *ConditionExpres
 		if expression.ConditionIndex < 0 || expression.ConditionIndex >= len(conditions) {
 			return nil
 		}
+		condition := cloneConditionWithBudget(conditions[expression.ConditionIndex], budget)
 		return &SemanticExpression{
 			Operator:  BooleanCondition,
-			Condition: &conditions[expression.ConditionIndex],
+			Condition: &condition,
 		}
 	case BooleanScalar:
 		if expression.Scalar == nil {
@@ -128,6 +132,7 @@ func semanticExpressionFromParseExpressionWithBudget(expression *ConditionExpres
 	case BooleanAnd, BooleanOr:
 		converted := &SemanticExpression{Operator: expression.Operator}
 		for _, child := range expression.Children {
+			budget.check(1)
 			childExpression := semanticExpressionFromParseExpressionWithBudget(child, conditions, budget)
 			if childExpression == nil {
 				return nil
@@ -139,7 +144,7 @@ func semanticExpressionFromParseExpressionWithBudget(expression *ConditionExpres
 		}
 		return converted
 	default:
-		return nil
+		panic(parseAbort{err: fmt.Errorf("unknown boolean operator %q", expression.Operator)})
 	}
 }
 
@@ -151,7 +156,8 @@ func semanticExpressionFromConditionsWithBudget(conditions []Condition, budget *
 	var expression *SemanticExpression
 	for index := range conditions {
 		budget.node()
-		leaf := &SemanticExpression{Operator: BooleanCondition, Condition: &conditions[index]}
+		condition := cloneConditionWithBudget(conditions[index], budget)
+		leaf := &SemanticExpression{Operator: BooleanCondition, Condition: &condition}
 		if expression == nil {
 			expression = leaf
 			continue
@@ -243,11 +249,19 @@ func cloneSemanticConditionsWithBudget(conditions []Condition, budget *parseBudg
 	out := make([]Condition, len(conditions))
 	for i, condition := range conditions {
 		budget.node()
-		budget.addOutput(len(condition.Field) + len(condition.Operator) + len(condition.Value) + len(condition.EventCategory) + len(condition.LogicalOp) + len(condition.Function) + len(condition.Lineage))
-		out[i] = condition
-		out[i].Alternatives = cloneSemanticStringsWithBudget(condition.Alternatives, budget)
-		out[i].CoFields = cloneSemanticStringsWithBudget(condition.CoFields, budget)
+		out[i] = cloneConditionWithBudget(condition, budget)
 	}
+	return out
+}
+
+func cloneConditionWithBudget(condition Condition, budget *parseBudget) Condition {
+	budget.check(1)
+	budget.addOutput(len(condition.Field) + len(condition.Operator) + len(condition.Value) + len(condition.EventCategory) + len(condition.LogicalOp) + len(condition.Function) + len(condition.Lineage))
+	budget.addOutputExact(jsonTextBound(condition.PredicateSyntax, budget) + operandJSONBound(condition.RHS, budget))
+	out := condition
+	out.Alternatives = cloneSemanticStringsWithBudget(condition.Alternatives, budget)
+	out.CoFields = cloneSemanticStringsWithBudget(condition.CoFields, budget)
+	out.RHS = cloneOperand(condition.RHS, budget)
 	return out
 }
 
@@ -270,8 +284,11 @@ func cloneSemanticStringsWithBudget(values []string, budget *parseBudget) []stri
 	if len(values) == 0 {
 		return nil
 	}
+	budget.check(len(values))
+	bound := 16 * len(values)
 	for _, value := range values {
-		budget.addOutput(len(value))
+		bound += jsonTextBound(value, budget)
 	}
+	budget.addOutputExact(bound)
 	return append([]string(nil), values...)
 }

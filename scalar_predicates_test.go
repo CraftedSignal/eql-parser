@@ -66,3 +66,19 @@ func TestScalarCorrelationsAndPipeIndexes(t *testing.T) {
 		t.Fatalf("got %s", got)
 	}
 }
+
+func TestUnknownBooleanNodesFailClosed(t *testing.T) {
+	for _, fn := range []func(){
+		func() { remapConditionExpression(&ConditionExpression{Operator: "xor"}, []int{0}) },
+		func() { semanticExpressionFromParseExpression(&ConditionExpression{Operator: "xor"}, nil) },
+	} {
+		func() {
+			defer func() {
+				if _, ok := recover().(parseAbort); !ok {
+					t.Error("unknown boolean node was silently dropped")
+				}
+			}()
+			fn()
+		}()
+	}
+}

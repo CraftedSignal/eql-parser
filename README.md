@@ -148,6 +148,21 @@ steps additionally expose a recursive `Subquery *ParseResult` — a
 self-contained extraction of that correlation term, the EQL analog of a join
 subsearch.
 
+Newly extracted field conditions also carry `RHS` and `PredicateSyntax`.
+`RHS` identifies string, number, bool, null, field, list, or expression
+operands; list items retain their kinds, order, and repetitions. Number text
+keeps its original notation, and a null operand has no sentinel text.
+`PredicateSyntax` is the full atomic predicate in canonical EQL, including
+function arguments and their order. For a safely merged OR condition, it is
+the canonical OR of its source atoms. Computed predicates remain scalar leaves
+in the complete expression even when flat extraction reports a field.
+Older serialized conditions without `RHS` are untyped: `Value` alone does not
+establish whether `null`, `true`, or `1` was a literal or a string. These
+metadata fields are additive in JSON, but adding exported Go struct fields
+can break unkeyed struct literals. Consumers should use `Expression` for
+boolean meaning and either support scalar leaves and typed RHS explicitly or
+reject unsupported predicates.
+
 Parsing is intentionally permissive: field-to-field comparisons such as
 `x == y` can be represented locally, although modern Elasticsearch EQL does
 not support them. Parser acceptance alone does not establish service support.

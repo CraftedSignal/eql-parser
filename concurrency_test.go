@@ -79,8 +79,8 @@ func checkConcurrentCalls(worker, iteration int) error {
 			return fmt.Errorf("valid calls inherited failure: extraction=%v analysis=%v", extracted.Errors, semantic.Errors)
 		}
 		want := []Condition{
-			{Field: "process.name", Operator: "==", Value: name, EventCategory: "process"},
-			{Field: "user.name", Operator: "==", Value: file, EventCategory: "process", LogicalOp: "OR"},
+			{Field: "process.name", Operator: "==", Value: name, EventCategory: "process", RHS: &Operand{Kind: OperandString, Text: name}, PredicateSyntax: fmt.Sprintf(`process.name == %q`, name)},
+			{Field: "user.name", Operator: "==", Value: file, EventCategory: "process", LogicalOp: "OR", RHS: &Operand{Kind: OperandString, Text: file}, PredicateSyntax: fmt.Sprintf(`user.name == %q`, file)},
 		}
 		operator := BooleanOr
 		wantExpression := &ConditionExpression{Operator: BooleanOr, Children: []*ConditionExpression{
@@ -88,7 +88,7 @@ func checkConcurrentCalls(worker, iteration int) error {
 			{Operator: BooleanCondition, ConditionIndex: 1},
 		}}
 		if query == sequence {
-			want[1] = Condition{Field: "file.name", Operator: "==", Value: file, EventCategory: "file", SequenceStep: 1}
+			want[1] = Condition{Field: "file.name", Operator: "==", Value: file, EventCategory: "file", SequenceStep: 1, RHS: &Operand{Kind: OperandString, Text: file}, PredicateSyntax: fmt.Sprintf(`file.name == %q`, file)}
 			operator = BooleanAnd
 			wantExpression = nil
 			if err := checkConcurrentSequence(extracted.Sequence, semantic.Sequence, want); err != nil {

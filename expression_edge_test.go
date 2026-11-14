@@ -31,9 +31,14 @@ func TestExpressionBuilderEdgeBranches(t *testing.T) {
 
 func TestRemapConditionExpressionEdgeBranches(t *testing.T) {
 	unknown := &ConditionExpression{Operator: BooleanOperator("xor")}
-	if got := remapConditionExpression(unknown, []int{0}); got != nil {
-		t.Fatalf("unknown operator remapped to %#v", got)
-	}
+	func() {
+		defer func() {
+			if _, ok := recover().(parseAbort); !ok {
+				t.Error("unknown operator did not abort")
+			}
+		}()
+		remapConditionExpression(unknown, []int{0})
+	}()
 
 	outOfRange := &ConditionExpression{Operator: BooleanCondition, ConditionIndex: 2}
 	if got := remapConditionExpression(outOfRange, []int{0}); got != nil {

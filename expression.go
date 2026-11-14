@@ -293,7 +293,7 @@ func (r *conditionExpressionRemapper) remap(expression *ConditionExpression) *Co
 		}
 		return converted
 	default:
-		return nil
+		panic(parseAbort{err: fmt.Errorf("unknown boolean operator %q", expression.Operator)})
 	}
 }
 

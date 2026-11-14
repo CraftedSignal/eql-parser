@@ -16,7 +16,7 @@ func TestSiblingOrMergeTruthTables(t *testing.T) {
 		{`x == "u" or (x == "v" and a == "yes")`, 3, "or(0,and(1,2))", func(a, u, v bool) bool { return u || v && a }},
 		{`a == "yes" and (x == "u" or x == "v")`, 2, "and(0,1)", func(a, u, v bool) bool { return a && (u || v) }},
 		{`(x == "u" or x == "v")`, 1, "0", func(a, u, v bool) bool { return u || v }},
-		{`not (x == "u" or x == "v")`, 2, "and(0,1)", func(a, u, v bool) bool { return !(u || v) }},
+		{`not (x == "u" or x == "v")`, 2, "and(0,1)", func(a, u, v bool) bool { return !u && !v }},
 	} {
 		t.Run(tc.text, func(t *testing.T) {
 			r := ExtractConditions("any where " + tc.text)

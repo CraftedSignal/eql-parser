@@ -1,9 +1,11 @@
 package eql
 
+import "unicode/utf8"
+
 // canonicalExprWithBudget reserves a conservative rendering bound before the
 // renderer allocates. The same call budget covers its preflight and rendering.
 func canonicalExprWithBudget(e Expr, budget *parseBudget) string {
-	budget.addOutput(canonicalExprBound(e, budget))
+	budget.reserveRenderBytes(canonicalExprBound(e, budget))
 	return ExprString(e)
 }
 func canonicalExprBound(e Expr, budget *parseBudget) int {
@@ -41,11 +43,35 @@ func canonicalExprBound(e Expr, budget *parseBudget) int {
 			n += 32 + 2*len(p.Name)
 		}
 	case *Literal:
-		n += 6*len(v.Value) + len(v.Text)
+		if v.Kind == LitString {
+			n += quotedStringBound(v.Value, budget)
+		} else {
+			n += len(v.Text)
+		}
 	case *Lineage:
 		if v.Sub != nil {
 			n += 6*len(v.Sub.Category) + canonicalExprBound(v.Sub.Where, budget)
 		}
+	}
+	return n
+}
+
+func quotedStringBound(value string, budget *parseBudget) int {
+	n := 2
+	for len(value) > 0 {
+		budget.check(1)
+		r, size := utf8.DecodeRuneInString(value)
+		switch {
+		case r == utf8.RuneError && size == 1:
+			n += 3
+		case r == '"' || r == '\\' || r == '\n' || r == '\r' || r == '\t':
+			n += 2
+		case r < 0x20:
+			n += 8
+		default:
+			n += size
+		}
+		value = value[size:]
 	}
 	return n
 }
