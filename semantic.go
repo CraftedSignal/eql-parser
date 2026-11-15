@@ -36,16 +36,20 @@ type SemanticSequence struct {
 	MaxSpan   string                 `json:"max_span,omitempty"`
 	MaxSpanMS int64                  `json:"max_span_ms,omitempty"`
 	ByFields  []string               `json:"by_fields,omitempty"`
+	ByKeys    []CorrelationKey       `json:"by_keys,omitempty"`
 	Steps     []SemanticSequenceStep `json:"steps"`
 	Until     *SemanticSequenceStep  `json:"until,omitempty"`
 }
 
 // SemanticSequenceStep is one step in an EQL correlation query.
 type SemanticSequenceStep struct {
-	EventCategory  string         `json:"event_category"`
-	ByFields       []string       `json:"by_fields,omitempty"`
-	Runs           int            `json:"runs,omitempty"`
-	Missing        bool           `json:"missing,omitempty"`
+	EventCategory string           `json:"event_category"`
+	ByFields      []string         `json:"by_fields,omitempty"`
+	ByKeys        []CorrelationKey `json:"by_keys,omitempty"`
+	Runs          int              `json:"runs,omitempty"`
+	Missing       bool             `json:"missing,omitempty"`
+	// ConditionCount counts flat condition records emitted for this term before
+	// OR-alternative merging. It does not index final Subquery.Conditions.
 	ConditionCount int            `json:"condition_count"`
 	Subquery       *SemanticQuery `json:"subquery,omitempty"`
 }
@@ -201,6 +205,7 @@ func semanticSequenceFromParseSequenceWithBudget(sequence *SequenceInfo, budget 
 		MaxSpan:   sequence.MaxSpan,
 		MaxSpanMS: sequence.MaxSpanMS,
 		ByFields:  cloneSemanticStringsWithBudget(sequence.ByFields, budget),
+		ByKeys:    cloneCorrelationKeysWithBudget(sequence.ByKeys, budget),
 		Steps:     semanticSequenceStepsFromParseStepsWithBudget(sequence.Steps, budget),
 		Until:     semanticSequenceStepFromParseStepWithBudget(sequence.Until, budget),
 	}
@@ -234,6 +239,7 @@ func semanticSequenceStepFromParseStepWithBudget(step *SequenceStepInfo, budget 
 	return &SemanticSequenceStep{
 		EventCategory:  step.EventCategory,
 		ByFields:       cloneSemanticStringsWithBudget(step.ByFields, budget),
+		ByKeys:         cloneCorrelationKeysWithBudget(step.ByKeys, budget),
 		Runs:           step.Runs,
 		Missing:        step.Missing,
 		ConditionCount: step.ConditionCount,
