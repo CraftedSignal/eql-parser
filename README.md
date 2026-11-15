@@ -83,8 +83,27 @@ seq := result.Sequence
 fmt.Println(seq.Kind)        // "sequence"
 fmt.Println(seq.MaxSpanMS)   // 300000
 fmt.Println(seq.ByFields)    // [process.entity_id]
+fmt.Println(seq.ByKeys[0].Syntax) // process.entity_id
 fmt.Println(len(seq.Steps))  // 2
 ```
+
+`ByKeys` is the authoritative ordered list of authored `by` expressions on
+the sequence, each step, and `until`. Each entry keeps complete canonical
+`Syntax`. Direct fields also have `Field.Name` and `Field.Optional`; computed
+expressions keep their syntax with no `Field` summary. The syntax is preserved
+for inspection and does not imply that an Elasticsearch backend can execute
+the expression. Global and term keys stay in their own scopes, including
+duplicates. `ByFields`, `JoinKeys`, and field discovery remain compatibility
+projections and can omit optional markers or flatten fields from computed keys.
+Older serialized results without `ByKeys` do not establish that keys were
+required; do not reconstruct descriptors from `ByFields`.
+
+`ConditionCount` is the number of flat condition records emitted for a term
+before OR-alternative merging. It is not the number of final
+`Subquery.Conditions` entries, semantic leaves, events, or runs, and must not
+be used to slice the final root `Conditions` array. Use each nested `Subquery`
+for the returned event predicate, or the step and until tags for root condition
+provenance.
 
 ### AST access
 

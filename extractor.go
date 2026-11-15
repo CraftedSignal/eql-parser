@@ -42,10 +42,13 @@ type Condition struct {
 // filter (`[category where ...]`), the EQL analog of a join subsearch — its
 // conditions are step-relative (SequenceStep 0) and independently inspectable.
 type SequenceStepInfo struct {
-	EventCategory  string       `json:"event_category"`
-	ByFields       []string     `json:"by_fields,omitempty"`
-	Runs           int          `json:"runs,omitempty"`
-	Missing        bool         `json:"missing,omitempty"`
+	EventCategory string           `json:"event_category"`
+	ByFields      []string         `json:"by_fields,omitempty"`
+	ByKeys        []CorrelationKey `json:"by_keys,omitempty"`
+	Runs          int              `json:"runs,omitempty"`
+	Missing       bool             `json:"missing,omitempty"`
+	// ConditionCount counts flat condition records emitted for this term before
+	// OR-alternative merging. It does not index final Subquery.Conditions.
 	ConditionCount int          `json:"condition_count"`
 	Subquery       *ParseResult `json:"subquery,omitempty"`
 }
@@ -57,6 +60,7 @@ type SequenceInfo struct {
 	MaxSpan   string             `json:"max_span,omitempty"`
 	MaxSpanMS int64              `json:"max_span_ms,omitempty"`
 	ByFields  []string           `json:"by_fields,omitempty"` // global join keys
+	ByKeys    []CorrelationKey   `json:"by_keys,omitempty"`
 	Steps     []SequenceStepInfo `json:"steps"`
 	Until     *SequenceStepInfo  `json:"until,omitempty"`
 }
@@ -283,6 +287,7 @@ func (ex *extractor) extractSequence(s *Sequence) {
 	ex.res.Commands = append(ex.res.Commands, string(s.Kind))
 
 	for _, by := range s.By {
+		info.ByKeys = append(info.ByKeys, correlationKeyFromExpr(by, ex.budget))
 		info.ByFields = append(info.ByFields, ex.registerJoinKey(by)...)
 	}
 
@@ -295,6 +300,7 @@ func (ex *extractor) extractSequence(s *Sequence) {
 			}
 		}
 		for _, by := range st.By {
+			stepInfo.ByKeys = append(stepInfo.ByKeys, correlationKeyFromExpr(by, ex.budget))
 			stepInfo.ByFields = append(stepInfo.ByFields, ex.registerJoinKey(by)...)
 		}
 		before := len(ex.res.Conditions)
@@ -316,6 +322,7 @@ func (ex *extractor) extractSequence(s *Sequence) {
 			}
 		}
 		for _, by := range s.Until.By {
+			untilInfo.ByKeys = append(untilInfo.ByKeys, correlationKeyFromExpr(by, ex.budget))
 			untilInfo.ByFields = append(untilInfo.ByFields, ex.registerJoinKey(by)...)
 		}
 		before := len(ex.res.Conditions)
