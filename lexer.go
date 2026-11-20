@@ -130,6 +130,12 @@ func (l *lexer) run() {
 		case c == '_' || unicode.IsLetter(firstRune(l.input[l.pos:])):
 			l.lexIdent(start, startLine, startCol)
 
+		case c == '@' && isIdentRune(firstRune(l.input[l.pos+1:])):
+			// As in Elasticsearch, '@' may start an identifier (@timestamp).
+			// A lone '@' stays an unexpected character.
+			l.advance()
+			l.lexIdent(start, startLine, startCol)
+
 		default:
 			l.lexOperator(start, startLine, startCol)
 		}
@@ -140,6 +146,11 @@ func (l *lexer) run() {
 func firstRune(s string) rune {
 	r, _ := utf8.DecodeRuneInString(s)
 	return r
+}
+
+// isIdentRune reports whether r can continue an identifier.
+func isIdentRune(r rune) bool {
+	return r == '_' || (r >= '0' && r <= '9') || unicode.IsLetter(r)
 }
 
 func (l *lexer) lexOperator(start, startLine, startCol int) {
