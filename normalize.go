@@ -54,11 +54,13 @@ func stripCodeFences(q string) string {
 
 // decodeEscapedWhitespace converts literal backslash-n / backslash-r /
 // backslash-t sequences that appear outside string literals into real
-// whitespace. Inside strings they are legitimate escapes and left alone.
+// whitespace. Inside strings they are legitimate escapes and left alone, and
+// comments are copied as written (see commentEnd).
 func decodeEscapedWhitespace(q string) string {
 	if !strings.Contains(q, `\n`) && !strings.Contains(q, `\r`) && !strings.Contains(q, `\t`) {
 		return q
 	}
+	escapedLines := !strings.Contains(q, "\n")
 	var b strings.Builder
 	b.Grow(len(q))
 	i := 0
@@ -66,11 +68,9 @@ func decodeEscapedWhitespace(q string) string {
 		c := q[i]
 
 		// Skip over comments verbatim.
-		if c == '/' && i+1 < len(q) && q[i+1] == '/' {
-			for i < len(q) && q[i] != '\n' {
-				b.WriteByte(q[i])
-				i++
-			}
+		if end := commentEnd(q, i, escapedLines); end > i {
+			b.WriteString(q[i:end])
+			i = end
 			continue
 		}
 
@@ -148,12 +148,18 @@ var typographicReplacer = strings.NewReplacer(
 
 // outsideStringLiterals applies fix to the query text between string
 // literals and keeps the literals as written. A curly quote that fix turns
-// into a straight quote then opens or closes a literal as usual.
+// into a straight quote then opens or closes a literal as usual. A quote
+// inside a comment opens no literal.
 func outsideStringLiterals(q string, fix func(string) string) string {
+	escapedLines := !strings.Contains(q, "\n")
 	var b strings.Builder
 	b.Grow(len(q))
 	start := 0
 	for i := 0; i < len(q); {
+		if end := commentEnd(q, i, escapedLines); end > i {
+			i = end
+			continue
+		}
 		if q[i] != '"' && q[i] != '\'' {
 			i++
 			continue
@@ -165,4 +171,32 @@ func outsideStringLiterals(q string, fix func(string) string) string {
 	}
 	b.WriteString(fix(q[start:]))
 	return b.String()
+}
+
+// commentEnd returns the index just past the comment that starts at q[i], or
+// i when none starts there. As in the lexer, a block comment ends after the
+// first */ and a line comment at the line break. A query with escapedLines
+// has no line break of its own but carries them as a literal \n (taken from
+// JSON), so there that ends a line comment instead.
+func commentEnd(q string, i int, escapedLines bool) int {
+	if q[i] != '/' || i+1 >= len(q) {
+		return i
+	}
+	switch q[i+1] {
+	case '*':
+		if end := strings.Index(q[i+2:], "*/"); end >= 0 {
+			return i + 2 + end + 2
+		}
+		return len(q)
+	case '/':
+		lineBreak := "\n"
+		if escapedLines {
+			lineBreak = `\n`
+		}
+		if end := strings.Index(q[i:], lineBreak); end >= 0 {
+			return i + end
+		}
+		return len(q)
+	}
+	return i
 }
