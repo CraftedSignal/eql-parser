@@ -1280,7 +1280,8 @@ var eventCodeFields = map[string]bool{
 // GetEventTypeFromConditions derives a canonical event-type string (e.g.
 // "windows_4688", "sysmon_1") from an event-code condition, so EQL rules
 // classify identically to the Sigma/SPL/KQL rules for the same telemetry.
-// Returns "" when the query carries no recognizable event code.
+// Returns "" when the query carries no recognizable event code. Negated
+// conditions are skipped: they exclude events rather than name their type.
 func GetEventTypeFromConditions(r *ParseResult) string {
 	if r == nil {
 		return ""
@@ -1288,6 +1289,9 @@ func GetEventTypeFromConditions(r *ParseResult) string {
 	code := ""
 	sysmon := false
 	for _, c := range r.Conditions {
+		if c.Negated {
+			continue
+		}
 		lf := strings.ToLower(c.Field)
 		if eventCodeFields[lf] && code == "" {
 			switch c.Operator {
