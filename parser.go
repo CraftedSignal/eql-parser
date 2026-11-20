@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -463,7 +464,8 @@ func isTimeUnit(s string) bool {
 }
 
 // MaxSpanDuration converts a maxspan value like "30s" or "2h" to
-// milliseconds. Returns false when the text is not a recognized duration.
+// milliseconds. Returns false when the text is not a recognized duration or
+// its milliseconds do not fit in an int64.
 func MaxSpanDuration(span string) (int64, bool) {
 	if span == "" {
 		return 0, false
@@ -495,7 +497,11 @@ func MaxSpanDuration(span string) (int64, bool) {
 	default:
 		return 0, false
 	}
-	return int64(num * mult), true
+	ms := num * mult
+	if ms >= math.MaxInt64 {
+		return 0, false
+	}
+	return int64(ms), true
 }
 
 func (p *parser) parsePipes() []*Pipe {
