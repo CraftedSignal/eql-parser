@@ -284,6 +284,7 @@ func (l *lexer) lexIdent(start, startLine, startCol int) {
 
 	if hasTilde {
 		l.advance()
+		l.budget.token()
 		l.tokens = append(l.tokens, Token{
 			Type:  TokenIdent,
 			Text:  l.input[start:l.pos],
@@ -389,6 +390,7 @@ func (l *lexer) lexBacktickIdent(start, startLine, startCol int) {
 	if !closed {
 		l.errorf(startLine, startCol, "unterminated backtick identifier")
 	}
+	l.budget.token()
 	l.tokens = append(l.tokens, Token{
 		Type:  TokenBacktickIdent,
 		Text:  l.input[start:l.pos],
@@ -436,6 +438,7 @@ func (l *lexer) lexString(start, startLine, startCol int, quote byte, raw bool) 
 	if !closed {
 		l.errorf(startLine, startCol, "unterminated string")
 	}
+	l.budget.token()
 	l.tokens = append(l.tokens, Token{
 		Type:         TokenString,
 		Text:         l.input[start:l.pos],
@@ -557,6 +560,7 @@ func (l *lexer) lexTripleString(start, startLine, startCol int) {
 		contentEnd = l.pos
 		l.errorf(startLine, startCol, "unterminated raw string")
 	}
+	l.budget.token()
 	l.tokens = append(l.tokens, Token{
 		Type:         TokenString,
 		Text:         l.input[start:l.pos],
