@@ -28,7 +28,7 @@ const (
 	transField     translateability = "field"       // pure field conditions — fully translatable
 	transKeyword   translateability = "keyword"     // free-text keyword search — no EQL analog
 	transAggregate translateability = "aggregation" // count()/near — partial (conditions only)
-	transComplex   translateability = "complex"     // escaped wildcards — no faithful EQL form
+	transComplex   translateability = "complex"     // escaped wildcards, "N of" — no faithful EQL form
 	transEmpty     translateability = "empty"       // nothing to translate
 )
 
@@ -53,8 +53,9 @@ func (c canonCond) key() string {
 
 // SigmaToEQL translates a parsed Sigma rule into an EQL query string, plus a
 // classification of how completely it could be translated. Field conditions
-// translate fully; keyword and aggregation constructs are reported so the
-// caller never mistakes a lossy translation for a faithful one.
+// translate fully, following the rule's boolean tree (sig.Expression) so its
+// grouping survives; keyword, aggregation and "N of" constructs are reported
+// so the caller never mistakes a lossy translation for a faithful one.
 func SigmaToEQL(sig *sigma.ParseResult) (query string, class translateability) {
 	if sig == nil || len(sig.Conditions) == 0 {
 		return "any where true", transEmpty
@@ -66,37 +67,50 @@ func SigmaToEQL(sig *sigma.ParseResult) (query string, class translateability) {
 		// faithfully and are classified rather than silently mistranslated.
 		return "any where true", transComplex
 	}
-
-	class = transField
+	for _, c := range sig.Conditions {
+		if c.Field == "" || c.Operator == "keyword" {
+			// A keyword/free-text term: EQL cannot express it.
+			return "any where true", transKeyword
+		}
+	}
+	where, ok := sigmaExprToEQL(sig.Expression)
+	if !ok {
+		return "any where true", transComplex
+	}
 	if len(sig.Commands) > 0 {
-		class = transAggregate
+		return "any where " + where, transAggregate
 	}
+	return "any where " + where, transField
+}
 
-	var parts []string
-	for i, c := range sig.Conditions {
-		leaf, ok := sigmaCondToEQL(c)
-		if !ok {
-			// A keyword/free-text term: EQL cannot express it. Mark the rule
-			// keyword-class and skip the term from the field translation.
-			if c.Field == "" || c.Operator == "keyword" {
-				class = transKeyword
+// sigmaExprToEQL renders a Sigma detection tree as an EQL boolean expression,
+// parenthesizing nested groups. ok is false for a part EQL cannot express,
+// such as an "N of" threshold.
+func sigmaExprToEQL(e *sigma.Expression) (string, bool) {
+	if e == nil {
+		return "", false
+	}
+	switch e.Kind {
+	case sigma.ExpressionCondition:
+		return sigmaCondToEQL(*e.Condition)
+	case sigma.ExpressionNot:
+		inner, ok := sigmaExprToEQL(e.Children[0])
+		return "not (" + inner + ")", ok
+	case sigma.ExpressionAnd, sigma.ExpressionOr:
+		parts := make([]string, len(e.Children))
+		for i, child := range e.Children {
+			part, ok := sigmaExprToEQL(child)
+			if !ok {
+				return "", false
 			}
-			continue
+			if child.Kind == sigma.ExpressionAnd || child.Kind == sigma.ExpressionOr {
+				part = "(" + part + ")"
+			}
+			parts[i] = part
 		}
-		connector := " and "
-		if i > 0 && c.LogicalOp == "OR" {
-			connector = " or "
-		}
-		if len(parts) == 0 {
-			parts = append(parts, leaf)
-		} else {
-			parts = append(parts, connector, leaf)
-		}
+		return strings.Join(parts, " "+string(e.Kind)+" "), true
 	}
-	if len(parts) == 0 {
-		return "any where true", class
-	}
-	return "any where " + strings.Join(parts, ""), class
+	return "", false
 }
 
 // sigmaCondToEQL renders one Sigma condition as an EQL boolean leaf. ok is
@@ -205,8 +219,9 @@ type eqlSigmaRule struct {
 //
 // Each EQL condition becomes one or more Sigma selections OR'd together (a
 // value list with mixed wildcard shapes is split into a selection per shape),
-// and the conditions are AND'd - with negation and existence handled in the
-// condition expression so nothing is silently mistranslated.
+// and the condition follows the query's boolean tree (res.Expression) - with
+// negation and existence handled in the condition expression so nothing is
+// silently mistranslated.
 func EQLToSigmaDetection(res *eql.ParseResult) (map[string]any, translateability, bool) {
 	if res == nil {
 		return nil, transEmpty, false
@@ -219,44 +234,93 @@ func EQLToSigmaDetection(res *eql.ParseResult) (map[string]any, translateability
 		return nil, transEmpty, false
 	}
 
-	det := map[string]any{}
-	class := transField
-	var terms []string
-	idx := 0
-	for _, c := range res.Conditions {
+	b := &sigmaConditionBuilder{res: res, det: map[string]any{}, class: transField}
+	condition, ok := b.term(res.Expression)
+	if !ok {
+		return nil, transKeyword, false
+	}
+	if len(b.det) == 0 {
+		return nil, b.class, false
+	}
+	b.det["condition"] = condition
+	return b.det, b.class, true
+}
+
+// sigmaConditionBuilder writes an EQL boolean tree as a Sigma condition,
+// adding the selections it names to det.
+type sigmaConditionBuilder struct {
+	res   *eql.ParseResult
+	det   map[string]any
+	class translateability
+	next  int
+}
+
+// term renders e as a Sigma condition. A filter-pipe condition renders as ""
+// and is left out: the pipe only ANDs it onto the query.
+func (b *sigmaConditionBuilder) term(e *eql.ConditionExpression) (string, bool) {
+	if e == nil {
+		return "", true
+	}
+	switch e.Operator {
+	case eql.BooleanCondition:
+		c := b.res.Conditions[e.ConditionIndex]
 		if c.PipeStage > 0 {
-			class = transAggregate
+			b.class = transAggregate
+			return "", true
+		}
+		return b.selection(c, c.Negated)
+	case eql.BooleanScalar:
+		// The tree keeps calls, quoted field paths and computed comparisons
+		// opaque. A predicate call such as cidrMatch(a, ...) or a comparison
+		// on a quoted field translates through the one condition it extracts
+		// to; a computed one (length(a) > 5, a + b > 1, lineage) has no Sigma form.
+		sub := eql.ExtractConditions("any where " + e.Scalar.Syntax)
+		if len(sub.Errors) > 0 || len(sub.Conditions) != 1 {
+			return "", false
+		}
+		c := sub.Conditions[0]
+		if c.Function != "" && c.Function != c.Operator || len(c.CoFields) > 0 || c.Lineage != "" {
+			return "", false
+		}
+		return b.selection(c, e.Scalar.Negated)
+	}
+	var parts []string
+	for _, child := range e.Children {
+		part, ok := b.term(child)
+		if !ok {
+			return "", false
+		}
+		if part == "" {
 			continue
 		}
-		units, ok := eqlCondToSigmaUnits(c)
-		if !ok || len(units) == 0 {
-			return nil, transKeyword, false
+		if child.Operator == eql.BooleanAnd || child.Operator == eql.BooleanOr {
+			part = "(" + part + ")"
 		}
-		var names []string
-		for j, u := range units {
-			name := fmt.Sprintf("sel%d_%d", idx, j)
-			det[name] = u
-			names = append(names, name)
-		}
-		idx++
-		term := strings.Join(names, " or ")
-		if len(names) > 1 {
-			term = "(" + term + ")"
-		}
-		if c.Negated {
-			if len(names) == 1 {
-				term = "not " + names[0]
-			} else {
-				term = "not " + term
-			}
-		}
-		terms = append(terms, term)
+		parts = append(parts, part)
 	}
-	if len(det) == 0 {
-		return nil, class, false
+	return strings.Join(parts, " "+string(e.Operator)+" "), true
+}
+
+// selection adds c's units as selections OR'd together and returns their term.
+func (b *sigmaConditionBuilder) selection(c eql.Condition, negated bool) (string, bool) {
+	units, ok := eqlCondToSigmaUnits(c)
+	if !ok || len(units) == 0 {
+		return "", false
 	}
-	det["condition"] = strings.Join(terms, " and ")
-	return det, class, true
+	names := make([]string, len(units))
+	for j, u := range units {
+		names[j] = fmt.Sprintf("sel%d_%d", b.next, j)
+		b.det[names[j]] = u
+	}
+	b.next++
+	term := strings.Join(names, " or ")
+	if len(names) > 1 {
+		term = "(" + term + ")"
+	}
+	if negated {
+		term = "not " + term
+	}
+	return term, true
 }
 
 // eqlCondToSigmaUnits renders one EQL condition as a set of Sigma selection
@@ -295,7 +359,13 @@ func eqlCondToSigmaUnits(c eql.Condition) ([]map[string]any, bool) {
 	case "cidrMatch", "cidrmatch":
 		return []map[string]any{{field + "|cidr": listOrScalar(values)}}, true
 	case "regex", "match":
-		return []map[string]any{{field + "|re" + casedSuffix: listOrScalar(values)}}, true
+		// Sigma's re is case-sensitive unless it carries the i sub-modifier,
+		// and cased applies to string values only.
+		re := "|re"
+		if c.CaseInsensitive {
+			re = "|re|i"
+		}
+		return []map[string]any{{field + re: listOrScalar(values)}}, true
 	case "startsWith":
 		return []map[string]any{{field + "|startswith" + casedSuffix: listOrScalar(values)}}, true
 	case "endsWith":
