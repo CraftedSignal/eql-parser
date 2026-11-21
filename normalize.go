@@ -108,12 +108,17 @@ func decodeEscapedWhitespace(q string) string {
 // position i (which must be a quote character).
 func scanStringEnd(q string, i int) int {
 	quote := q[i]
-	// Triple-quoted raw string.
+	// Triple-quoted raw string. As in the lexer, up to two more quotes after
+	// the closing """ belong to it.
 	if quote == '"' && i+2 < len(q) && q[i+1] == '"' && q[i+2] == '"' {
 		j := i + 3
 		for j+2 < len(q) {
 			if q[j] == '"' && q[j+1] == '"' && q[j+2] == '"' {
-				return j + 3
+				end := j + 3
+				for end < len(q) && end < j+5 && q[end] == '"' {
+					end++
+				}
+				return end
 			}
 			j++
 		}
