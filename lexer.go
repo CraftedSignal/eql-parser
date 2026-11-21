@@ -402,7 +402,8 @@ func (l *lexer) lexBacktickIdent(start, startLine, startCol int) {
 }
 
 // lexString handles all string forms. quote is the delimiter byte at l.pos.
-// raw disables escape processing (legacy ?"..." / ?'...' form).
+// raw is the legacy ?"..." / ?'...' form, where an escaped quote is the only
+// escape (see rawStringEnd).
 func (l *lexer) lexString(start, startLine, startCol int, quote byte, raw bool) {
 	// Triple-quoted raw string: """..."""
 	if quote == '"' && l.peek(1) == '"' && l.peek(2) == '"' {
@@ -411,22 +412,30 @@ func (l *lexer) lexString(start, startLine, startCol int, quote byte, raw bool) 
 	}
 
 	l.advance() // opening quote
+	end := -1
+	if raw {
+		end = rawStringEnd(l.input, l.pos, quote)
+	}
 	var val strings.Builder
 	closed := false
 	for l.pos < len(l.input) {
 		c := l.input[l.pos]
-		if c == quote {
+		if c == quote && (!raw || l.pos == end) {
 			l.advance()
 			closed = true
 			break
 		}
-		if c == '\n' && !raw {
+		if c == '\n' {
 			// EQL strings are single-line; treat a bare newline as
 			// termination so one bad string doesn't eat the whole query.
 			break
 		}
 		if c == '\\' && !raw {
 			l.lexEscape(&val)
+			continue
+		}
+		if c == '\\' && l.peek(1) == quote && l.pos+1 != end {
+			l.advance() // raw: keep only the escaped quote
 			continue
 		}
 		// Write the whole rune: advance() moves past a multi-byte rune, so
@@ -525,6 +534,25 @@ func hexValue(c byte) int {
 	default:
 		return int(c-'A') + 10
 	}
+}
+
+// rawStringEnd returns the index of the quote that closes a legacy raw string
+// whose content starts at i, or -1 when its line has none. Endgame's
+// RAW_DQ_STRING /\?"(\\\"|[^"\r\n])*"/ and Elasticsearch's STRING rule take
+// the longest match, so the first quote without a backslash before it closes
+// the string; failing that, the last escaped quote on the line does.
+func rawStringEnd(s string, i int, quote byte) int {
+	end := -1
+	for ; i < len(s) && s[i] != '\n'; i++ {
+		if s[i] != quote {
+			continue
+		}
+		end = i
+		if s[i-1] != '\\' {
+			break
+		}
+	}
+	return end
 }
 
 // lexTripleString reads """...""". Content is raw (no escapes). Following
