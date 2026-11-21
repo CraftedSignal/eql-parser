@@ -1142,7 +1142,7 @@ func fieldInText(arg, field string) bool {
 }
 
 func isIdentByte(b byte) bool {
-	return b == '_' || b == '.' || (b >= '0' && b <= '9') || (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
+	return b == '_' || b == '.' || b == '@' || (b >= '0' && b <= '9') || (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
 }
 
 // DeduplicateConditions removes duplicate conditions, keeping the first

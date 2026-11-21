@@ -487,6 +487,7 @@ func isPlainIdent(s string) bool {
 	for i, r := range s {
 		switch {
 		case r == '_' || (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z'):
+		case r == '@' && i == 0 && len(s) > 1: // @timestamp
 		case r >= '0' && r <= '9':
 			if i == 0 {
 				return false
