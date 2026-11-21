@@ -1355,7 +1355,7 @@ func ClassifyFieldUsage(r *ParseResult, field string) FieldUsage {
 	}
 	for _, p := range r.Pipes {
 		for _, a := range p.Args {
-			if strings.Contains(a, field) {
+			if fieldInText(a, field) {
 				u.InPipes = true
 			}
 		}
