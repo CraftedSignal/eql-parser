@@ -158,7 +158,9 @@ predicate, or a computed/function predicate. Consumers must preserve it or
 explicitly reject it; dropping it or treating it as true changes the filter.
 The corresponding `SemanticQuery.Expression` carries owned condition and
 scalar leaves. Scalar syntax is canonical rendering, not the original source
-substring or an evaluated truth value.
+substring or an evaluated truth value. For a sequence, join, or sample it is
+the AND of the positive steps' own trees; missing events and `until` appear
+only under `Sequence`.
 Each `Condition` records the `Field`, `Operator`, `Value`, `Negated`,
 `CaseInsensitive`, `LogicalOp`, `Alternatives`, `EventCategory`,
 `SequenceStep`, `FromUntil`, `FromMissing`, `PipeStage`, `IsOptional`,

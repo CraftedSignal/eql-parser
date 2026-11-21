@@ -101,7 +101,9 @@ func semanticFromExtractionWithBudget(result *ParseResult, budget *parseBudget) 
 		Errors:          cloneSemanticStringsWithBudget(result.Errors, budget),
 	}
 	semantic.Expression = semanticExpressionFromParseExpressionWithBudget(result.Expression, semantic.Conditions, budget)
-	if semantic.Expression == nil && (!result.astExpression || result.Sequence != nil) {
+	if semantic.Expression == nil && semantic.Sequence != nil {
+		semantic.Expression = semanticSequenceExpressionWithBudget(semantic.Sequence, budget)
+	} else if semantic.Expression == nil && !result.astExpression {
 		semantic.Expression = semanticExpressionFromConditionsWithBudget(semantic.Conditions, budget)
 	}
 	return semantic
@@ -193,6 +195,46 @@ func combineSemanticExpressions(operator BooleanOperator, left, right *SemanticE
 		combined.Children = append(combined.Children, right)
 	}
 	return combined
+}
+
+// semanticSequenceExpressionWithBudget builds a correlation's root tree: the
+// AND of its positive steps' own trees, so each step keeps its grouping. A
+// missing event or an until clause is not met by the matched events; Sequence
+// still describes them.
+func semanticSequenceExpressionWithBudget(sequence *SemanticSequence, budget *parseBudget) *SemanticExpression {
+	var expression *SemanticExpression
+	for step := range sequence.Steps {
+		budget.node()
+		if sequence.Steps[step].Missing || sequence.Steps[step].Subquery == nil {
+			continue
+		}
+		expression = combineSemanticExpressions(BooleanAnd, expression, semanticStepExpressionWithBudget(sequence.Steps[step].Subquery.Expression, step, budget))
+	}
+	return expression
+}
+
+// semanticStepExpressionWithBudget copies a step's tree; its condition leaves
+// take the step index that the root Conditions carry.
+func semanticStepExpressionWithBudget(expression *SemanticExpression, step int, budget *parseBudget) *SemanticExpression {
+	budget.node()
+	if expression == nil {
+		return nil
+	}
+	copied := &SemanticExpression{Operator: expression.Operator}
+	if expression.Condition != nil {
+		condition := cloneConditionWithBudget(*expression.Condition, budget)
+		condition.SequenceStep = step
+		copied.Condition = &condition
+	}
+	if expression.Scalar != nil {
+		budget.addOutput(len(expression.Scalar.Syntax))
+		scalar := *expression.Scalar
+		copied.Scalar = &scalar
+	}
+	for _, child := range expression.Children {
+		copied.Children = append(copied.Children, semanticStepExpressionWithBudget(child, step, budget))
+	}
+	return copied
 }
 
 func semanticSequenceFromParseSequenceWithBudget(sequence *SequenceInfo, budget *parseBudget) *SemanticSequence {
