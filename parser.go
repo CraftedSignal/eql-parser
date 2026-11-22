@@ -474,14 +474,29 @@ func MaxSpanDuration(span string) (int64, bool) {
 	for i < len(span) && (span[i] >= '0' && span[i] <= '9' || span[i] == '.') {
 		i++
 	}
-	// Integer milliseconds already have the requested unit. Avoid rounding
-	// their exact value through float64 before checking the int64 range.
-	if i > 0 && strings.EqualFold(span[i:], "ms") && !strings.ContainsRune(span[:i], '.') {
-		ms, err := strconv.ParseUint(span[:i], 10, 63)
-		if err != nil {
-			return 0, false
+	// Explicit whole-millisecond units can be multiplied exactly. Keep the
+	// decimal, sub-millisecond and unitless compatibility paths below.
+	if i > 0 && !strings.ContainsRune(span[:i], '.') {
+		var factor uint64
+		switch strings.ToLower(span[i:]) {
+		case "ms":
+			factor = 1
+		case "s", "sec", "secs", "second", "seconds":
+			factor = 1000
+		case "m", "min", "mins", "minute", "minutes":
+			factor = 60 * 1000
+		case "h", "hour", "hours":
+			factor = 60 * 60 * 1000
+		case "d", "day", "days":
+			factor = 24 * 60 * 60 * 1000
 		}
-		return int64(ms), true
+		if factor != 0 {
+			value, err := strconv.ParseUint(span[:i], 10, 63)
+			if err != nil || value > uint64(math.MaxInt64)/factor {
+				return 0, false
+			}
+			return int64(value * factor), true
+		}
 	}
 	num, err := strconv.ParseFloat(span[:i], 64)
 	if err != nil {
