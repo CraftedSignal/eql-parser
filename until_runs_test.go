@@ -259,7 +259,6 @@ func TestUntilRunsInvalidQueryKeepsPartialShape(t *testing.T) {
 		query string
 		steps int
 	}{
-		{`sequence [process where process.name == "start"] until [process where event.type == "stop"] with runs=2`, 1},
 		{`sequence [process where process.name == "start"] with other=2 [file where file.name == "out"] until [process where event.type == "stop"] with runs=2`, 2},
 	} {
 		ast, err := Parse(tc.query)
@@ -304,5 +303,89 @@ func TestUntilRunsHistoricalFinalDescriptorBudget(t *testing.T) {
 				t.Errorf("historical final descriptor charge changed: runs=%d resource=%s error=%v output=%d work=%d", runs, resource, failed, b.output, b.work)
 			}
 		}
+	}
+}
+
+func TestUntilRunsCardinalityAdmission(t *testing.T) {
+	const plain = `sequence [process where process.name == "start"] until [process where event.type == "stop"]`
+	const missing = `sequence with maxspan=1s ![process where process.name == "start"] until [file where event.type == "stop"]`
+	for _, tc := range []struct {
+		name, query string
+		runs        int
+		missing     bool
+	}{
+		{"plain", plain + " with runs=2", 2, false},
+		{"missing", missing + " with runs=2", 2, true},
+		{"case and upper bound", plain + " with RUNS=100", 100, false},
+		{"native fold compatibility", plain + " with runſ=2", 2, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ast, err := Parse(tc.query)
+			if err != nil {
+				t.Fatal(err)
+			}
+			before, err := json.Marshal(ast)
+			if err != nil {
+				t.Fatal(err)
+			}
+			authored := ast.Body.(*Sequence)
+			if len(authored.Steps) != 1 || authored.Steps[0].Missing != tc.missing || authored.Until == nil || authored.Until.Runs != tc.runs {
+				t.Fatalf("wrong authored placement: %+v", authored)
+			}
+			owned := &ParseResult{Conditions: []Condition{}}
+			newExtractor(owned).extractQuery(ast)
+			after, err := json.Marshal(ast)
+			if err != nil || string(before) != string(after) {
+				t.Fatalf("AST mutated: %v", err)
+			}
+			p, s := ExtractConditions(tc.query), AnalyzeQuery(tc.query)
+			if len(p.Errors)+len(s.Errors) != 0 || p.Sequence == nil || s.Sequence == nil || len(p.Sequence.Steps) != 2 || len(s.Sequence.Steps) != 2 {
+				t.Fatalf("normalization failed: %+v / %+v", p, s)
+			}
+			pp, pu := p.Sequence.Steps[1], p.Sequence.Until
+			sp, su := s.Sequence.Steps[1], s.Sequence.Until
+			if pu == nil || su == nil || pp.Runs != tc.runs-1 || sp.Runs != tc.runs-1 || pu.Runs != 1 || su.Runs != 1 || pp.Missing || sp.Missing || pu.Missing || su.Missing || p.Sequence.Steps[0].Missing != tc.missing {
+				t.Fatal("wrong normalized multiplicity/roles")
+			}
+			if pp.Subquery == nil || pu.Subquery == nil || pp.Subquery == pu.Subquery || pp.Subquery.Expression == pu.Subquery.Expression || !reflect.DeepEqual(pp.Subquery, pu.Subquery) {
+				t.Fatal("parse subqueries must be equal independent owners")
+			}
+			if sp.Subquery == nil || su.Subquery == nil || sp.Subquery == su.Subquery || sp.Subquery.Expression == su.Subquery.Expression || !reflect.DeepEqual(sp.Subquery, su.Subquery) {
+				t.Fatal("semantic subqueries must be equal independent owners")
+			}
+			pp.Subquery.Conditions[0].Value = "mutated"
+			sp.Subquery.Conditions[0].Value = "mutated"
+			if pu.Subquery.Conditions[0].Value != "stop" || su.Subquery.Conditions[0].Value != "stop" {
+				t.Fatal("positive mutation reached until")
+			}
+			for _, conditions := range [][]Condition{p.Conditions, s.Conditions} {
+				if len(conditions) != 3 {
+					t.Fatalf("wrong conditions: %+v", conditions)
+				}
+				for i, c := range conditions {
+					if c.SequenceStep != i || c.FromUntil != (i == 2) || c.FromMissing != (i == 0 && tc.missing) {
+						t.Fatalf("wrong root role: %+v", c)
+					}
+				}
+			}
+			if tc.missing && p.Sequence.MaxSpanMS != 1000 {
+				t.Fatal("missing maxspan lost")
+			}
+		})
+	}
+	for _, query := range []string{
+		`sequence ![process where true] until [file where true] with runs=2`,
+		`sequence until [file where true] with runs=100`,
+		plain,
+		plain + " with runs=1",
+	} {
+		p, s := ExtractConditions(query), AnalyzeQuery(query)
+		if len(p.Errors) == 0 || len(s.Errors) == 0 {
+			t.Fatalf("invalid cardinality accepted: %s", query)
+		}
+	}
+	ordinary := ExtractConditions(`sequence [process where true] with runs=2`)
+	if len(ordinary.Errors) != 0 || ordinary.Sequence == nil || len(ordinary.Sequence.Steps) != 1 || ordinary.Sequence.Steps[0].Runs != 2 || ordinary.Sequence.Until != nil {
+		t.Fatalf("ordinary repetition changed: %+v", ordinary)
 	}
 }

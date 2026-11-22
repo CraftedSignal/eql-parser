@@ -282,6 +282,21 @@ func (p *parser) parseSequence(kind SequenceKind) *Sequence {
 	return s
 }
 
+// extraUntilPositiveTerms counts repeated positive terms before the final
+// until term is removed, using the extractor's normalization eligibility.
+func (p *parser) extraUntilPositiveTerms(s *Sequence) int {
+	until := s.Until
+	if s.Kind != KindSequence || until == nil || until.Missing || until.Query == nil ||
+		until.Runs < 2 || until.Runs > 100 {
+		return 0
+	}
+	p.budget.check(len(until.WithKey))
+	if !strings.EqualFold(until.WithKey, "runs") {
+		return 0
+	}
+	return until.Runs - 1
+}
+
 func (p *parser) validateSequence(s *Sequence) {
 	positive := 0
 	missing := 0
@@ -297,11 +312,15 @@ func (p *parser) validateSequence(s *Sequence) {
 		// A single step repeated with `with runs=N` (N>=2) is a valid
 		// multi-event sequence — the term matches N consecutive times.
 		singleWithRuns := len(s.Steps) == 1 && s.Steps[0].Runs >= 2
-		if len(s.Steps) < 2 && !singleWithRuns {
+		extraUntil := p.extraUntilPositiveTerms(s)
+		// Only the minimum matters; never expand repeated terms or grow a
+		// counter with the total authored/repeated cardinality.
+		remaining := min(2, min(len(s.Steps), 2)+extraUntil)
+		if len(s.Steps) == 0 || (remaining < 2 && !singleWithRuns) {
 			p.addError("sequence requires at least two events")
 		}
 		if missing > 0 {
-			if positive == 0 {
+			if positive == 0 && extraUntil == 0 {
 				p.addError("sequence with missing events requires at least one positive event")
 			}
 			if s.MaxSpan == "" {
