@@ -135,8 +135,10 @@ fmt.Println(q.String()) // canonical re-rendering (round-trips)
 | `GetEventTypeFromConditions(result) string` | Canonical event type (e.g. `windows_4688`) from an event-code condition. |
 | `MaxSpanDuration(span) (int64, bool)` | Convert a `maxspan` value to milliseconds. |
 
-All-digit `ms` durations are converted exactly within the signed 64-bit range.
-Decimal milliseconds and other units retain their existing conversion behavior.
+All-digit durations with explicit `ms`, `s`, `m`, `h`, or `d` units (including
+existing case-insensitive aliases) are converted exactly when their millisecond
+value fits the signed 64-bit range. Decimal durations, sub-millisecond units,
+and unitless helper inputs retain their existing conversion behavior.
 The authored `MaxSpan` text remains available when the numeric projection does
 not fit. This is a local metadata conversion, not a backend acceptance guarantee.
 
