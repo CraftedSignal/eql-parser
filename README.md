@@ -135,6 +135,11 @@ fmt.Println(q.String()) // canonical re-rendering (round-trips)
 | `GetEventTypeFromConditions(result) string` | Canonical event type (e.g. `windows_4688`) from an event-code condition. |
 | `MaxSpanDuration(span) (int64, bool)` | Convert a `maxspan` value to milliseconds. |
 
+All-digit `ms` durations are converted exactly within the signed 64-bit range.
+Decimal milliseconds and other units retain their existing conversion behavior.
+The authored `MaxSpan` text remains available when the numeric projection does
+not fit. This is a local metadata conversion, not a backend acceptance guarantee.
+
 `ExtractConditions` and `AnalyzeQuery` use `MaxParseTime` (default 5 seconds)
 as a cooperative deadline. No parsing goroutine continues after they return.
 Cancellation is checked during lexing, parsing, extraction, and semantic
