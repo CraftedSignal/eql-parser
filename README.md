@@ -150,6 +150,11 @@ tree. Ordinary syntax errors still support best-effort extraction.
 
 `ParseResult` carries `Conditions`, `EventCategories`, `Sequence`, `Pipes`,
 `Commands`, `Fields`, `JoinKeys` (also via `GroupByFields()`), and `Errors`.
+Pipe-field classification uses private AST-derived metadata bound to the extracted
+pipe descriptors. Manually constructed or JSON-restored `Pipes`, or descriptors
+changed after extraction, do not establish pipe roles; independent structured
+conditions and join keys still contribute to the classification. Public `Args`
+remain canonical syntax, not a field-name inventory.
 `Conditions` is a flat, best-effort field projection. For event filters, use
 `Expression` as the complete boolean tree: a `condition` leaf refers to a
 condition index, while a `scalar` leaf carries canonical EQL syntax and any

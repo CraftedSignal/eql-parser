@@ -83,6 +83,16 @@ type ParseResult struct {
 	JoinKeys        []string             `json:"join_keys,omitempty"` // every by-clause field (global + per-step)
 	Errors          []string             `json:"errors,omitempty"`
 	astExpression   bool
+	pipeFields      []pipeFieldInventory
+}
+
+// pipeFieldInventory is trusted only while its public descriptor still matches.
+// A known record with no fields is distinct from missing (e.g. JSON) metadata.
+type pipeFieldInventory struct {
+	known  bool
+	name   string
+	args   []string
+	fields []string
 }
 
 // FieldUsage classifies how a field participates in a query.
@@ -225,12 +235,20 @@ func (ex *extractor) extractQuery(q *Query) {
 
 	for i, p := range q.Pipes {
 		info := PipeInfo{Name: p.Name}
+		fields := pipeFieldInventory{known: true, name: p.Name}
 		for _, a := range p.Args {
 			text := ExprString(a)
 			ex.budget.addOutput(len(text))
 			info.Args = append(info.Args, text)
-			ex.collectFields(a)
+			ex.collectFields(a, &fields)
 		}
+		// Reserve the private record and Args backing before retaining snapshots.
+		ex.budget.addOutput(0)
+		for range info.Args {
+			ex.budget.addOutput(0)
+		}
+		fields.args = slices.Clone(info.Args)
+		ex.res.pipeFields = append(ex.res.pipeFields, fields)
 		ex.res.Pipes = append(ex.res.Pipes, info)
 		ex.budget.addOutput(len(p.Name))
 		ex.res.Commands = append(ex.res.Commands, p.Name)
@@ -268,7 +286,7 @@ func (ex *extractor) enterEventQuery(e *EventQuery, step int, fromUntil, missing
 	ex.category, ex.step, ex.fromUntil, ex.missing = cat, step, fromUntil, missing
 	ex.logicalOp = seedOp
 	if e.Where != nil {
-		ex.collectFields(e.Where)
+		ex.collectFields(e.Where, nil)
 		ex.walkExpr(e.Where)
 	}
 	ex.category, ex.step, ex.fromUntil, ex.missing = prevCat, prevStep, prevUntil, prevMissing
@@ -741,10 +759,49 @@ func collectFieldNodesWithBudget(e Expr, budget *parseBudget) []*Field {
 
 // collectFields registers every field of an expression into the result's
 // Fields list (deduped, source order).
-func (ex *extractor) collectFields(e Expr) {
+func (ex *extractor) collectFields(e Expr, pipe *pipeFieldInventory) {
 	for _, f := range collectFieldNodesWithBudget(e, ex.budget) {
+		if pipe != nil {
+			if name := pipeFieldNameWithBudget(f, ex.budget); name != "" {
+				pipe.fields = append(pipe.fields, name)
+			}
+		}
 		ex.addField(f)
 	}
+}
+
+// Preflight the decoded name before allocation, then charge its one private
+// retained string and entry. Public Fields discovery retains its own name.
+func pipeFieldNameWithBudget(f *Field, budget *parseBudget) string {
+	size := 0
+	for i, segment := range f.Path {
+		budget.check(1)
+		if segment.IsIndex {
+			var digits [20]byte
+			size += 2 + len(strconv.AppendInt(digits[:0], int64(segment.Index), 10))
+			continue
+		}
+		budget.check(len(segment.Name))
+		size += len(segment.Name)
+		if i > 0 {
+			size++
+		}
+	}
+	if size == 0 {
+		return ""
+	}
+	// Parsed paths are bounded by the shared input/node limits, so this sum
+	// and the existing output charge cannot overflow an int.
+	budget.addOutput(size)
+	return f.Name()
+}
+
+func (r *ParseResult) pipeHasField(index int, field string) bool {
+	if field == "" || index >= len(r.pipeFields) || index >= len(r.Pipes) {
+		return false
+	}
+	known, current := r.pipeFields[index], r.Pipes[index]
+	return known.known && known.name == current.Name && slices.Equal(known.args, current.Args) && slices.Contains(known.fields, field)
 }
 
 func (ex *extractor) addField(f *Field) {
@@ -1051,7 +1108,8 @@ const (
 // using the same vocabulary as the sibling parsers: a correlation key
 // (join_key), a primary-stream filter (main), a correlated-event filter
 // (joined), or several roles at once (ambiguous). A field the query never
-// references is ProvenanceUnknown.
+// references is ProvenanceUnknown. Pipe roles require unmodified AST metadata
+// from extraction; manual or JSON-restored Pipes alone do not establish roles.
 func ClassifyFieldProvenance(r *ParseResult, field string) FieldProvenance {
 	if r == nil || field == "" {
 		return ProvenanceUnknown
@@ -1080,12 +1138,10 @@ func ClassifyFieldProvenance(r *ParseResult, field string) FieldProvenance {
 			inMain = true
 		}
 	}
-	for _, p := range r.Pipes {
-		for _, a := range p.Args {
-			if fieldInText(a, field) {
-				inMain = true
-				present = true
-			}
+	for i := range r.Pipes {
+		if r.pipeHasField(i, field) {
+			inMain = true
+			present = true
 		}
 	}
 
@@ -1331,6 +1387,8 @@ func (r *ParseResult) GroupByFields() []string {
 }
 
 // ClassifyFieldUsage reports how a field participates in the parsed query.
+// Pipe roles require unmodified AST metadata from extraction; manual or
+// JSON-restored Pipes alone do not establish roles.
 func ClassifyFieldUsage(r *ParseResult, field string) FieldUsage {
 	var u FieldUsage
 	for _, k := range r.JoinKeys {
@@ -1357,11 +1415,9 @@ func ClassifyFieldUsage(r *ParseResult, field string) FieldUsage {
 			u.Steps = append(u.Steps, c.SequenceStep)
 		}
 	}
-	for _, p := range r.Pipes {
-		for _, a := range p.Args {
-			if fieldInText(a, field) {
-				u.InPipes = true
-			}
+	for i := range r.Pipes {
+		if r.pipeHasField(i, field) {
+			u.InPipes = true
 		}
 	}
 	return u
