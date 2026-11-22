@@ -137,7 +137,7 @@ func extractWithBudget(query string, budget *parseBudget) (res *ParseResult) {
 	}
 	// Normalization has a fixed number of linear passes over bounded text.
 	budget.check(2 * len(query))
-	normalized := NormalizeQuery(query)
+	normalized := normalizeQueryWithBudget(query, budget)
 	budget.check(0)
 	if strings.TrimSpace(normalized) == "" {
 		res.Errors = []string{ErrEmptyQuery.Error()}

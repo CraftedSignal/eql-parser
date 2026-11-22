@@ -93,17 +93,22 @@ func (l *lexer) run() {
 		case c == '/' && l.peek(1) == '*':
 			l.advance()
 			l.advance()
-			closed := false
-			for l.pos < len(l.input) {
-				if l.input[l.pos] == '*' && l.peek(1) == '/' {
+			depth := 1
+			for l.pos < len(l.input) && depth > 0 {
+				switch {
+				case l.input[l.pos] == '/' && l.peek(1) == '*':
+					depth++
 					l.advance()
 					l.advance()
-					closed = true
-					break
+				case l.input[l.pos] == '*' && l.peek(1) == '/':
+					depth--
+					l.advance()
+					l.advance()
+				default:
+					l.advance()
 				}
-				l.advance()
 			}
-			if !closed {
+			if depth > 0 {
 				l.errorf(startLine, startCol, "unterminated block comment")
 			}
 
