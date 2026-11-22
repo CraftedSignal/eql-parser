@@ -469,7 +469,12 @@ func quoteString(s string) string {
 			b.WriteString(`\t`)
 		default:
 			if r < 0x20 {
-				b.WriteString(`\u{` + strconv.FormatInt(int64(r), 16) + `}`)
+				b.WriteString(`\u{`)
+				if r < 0x10 {
+					b.WriteByte('0')
+				}
+				b.WriteString(strconv.FormatInt(int64(r), 16))
+				b.WriteByte('}')
 			} else {
 				b.WriteRune(r)
 			}
