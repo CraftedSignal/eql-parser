@@ -403,6 +403,11 @@ func (ex *extractor) walkExpr(e Expr) {
 	defer func() { ex.atom = previousAtom }()
 	start := len(ex.res.Conditions)
 	defer func() { ex.budget.check(1); ex.leaves[e] = conditionRange{start, len(ex.res.Conditions)} }()
+	// This atomic family has an authoritative structured value leaf. Preserve
+	// AST field discovery, but do not emit executable-looking first-field hints.
+	if valuePredicateAtom(e, ex.budget) {
+		return
+	}
 	previousGroup := ex.mergeGroup
 	if ex.mergeGroup == 0 && !ex.negated {
 		if binary, ok := unwrap(e).(*Binary); ok && binary.Op == "or" && safeAlternativeTree(e, ex.budget) {

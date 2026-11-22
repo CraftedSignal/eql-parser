@@ -184,8 +184,8 @@ condition index, while a `scalar` leaf carries canonical EQL syntax and any
 enclosing NOT parity. A scalar can represent a constant, a field-free
 predicate, or a computed/function predicate. Consumers must preserve it or
 explicitly reject it; dropping it or treating it as true changes the filter.
-The corresponding `SemanticQuery.Expression` carries owned condition and
-scalar leaves. Scalar syntax is canonical rendering, not the original source
+The corresponding `SemanticQuery.Expression` carries owned condition, scalar,
+and structured `value` leaves. Scalar syntax is canonical rendering, not the original source
 substring or an evaluated truth value. For a sequence, join, or sample it is
 the AND of the positive steps' own trees; missing events and `until` appear
 only under `Sequence`.
@@ -204,7 +204,8 @@ keeps its original notation, and a null operand has no sentinel text.
 `PredicateSyntax` is the full atomic predicate in canonical EQL, including
 function arguments and their order. For a safely merged OR condition, it is
 the canonical OR of its source atoms. Computed predicates remain scalar leaves
-in the complete expression even when flat extraction reports a field.
+in the complete expression even when flat extraction reports a field, except
+for the structured value family below.
 Quoted and indexed field paths that collide after flattening also remain
 scalar leaves; their `PredicateSyntax` keeps the exact path structure. Ambiguous
 RHS field references use an expression operand with canonical EQL text.
@@ -212,8 +213,20 @@ Older serialized conditions without `RHS` are untyped: `Value` alone does not
 establish whether `null`, `true`, or `1` was a literal or a string. These
 metadata fields are additive in JSON, but adding exported Go struct fields
 can break unkeyed struct literals. Consumers should use `Expression` for
-boolean meaning and either support scalar leaves and typed RHS explicitly or
+boolean meaning and either support scalar/value leaves and typed RHS explicitly or
 reject unsupported predicates.
+
+Membership and pattern predicates bind before unary arithmetic, multiplication,
+addition and comparisons. A comparison such as `x in (1) == true` compares the
+membership result; it is not reduced to an event-field equality. Nested
+membership/pattern atoms and root predicates with compound operands carry
+`BooleanValue` with a `ValuePredicate` and recursive `ValueExpression`. Ordered
+children retain literal kinds, exact numeric text, decoded strings, optional
+field paths, grouping, calls, operators, predicate flags and legacy relationship
+events. Contextual NOT is separate from internal NOT and NOT-IN. These atoms
+emit no best-effort flat `Conditions`; the complete AST field inventory remains.
+Consumers must support this unevaluated value tree or reject it explicitly.
+It does not certify backend type compatibility or impose two-valued/null logic.
 
 Parsing is intentionally permissive: field-to-field comparisons such as
 `x == y` can be represented locally, although modern Elasticsearch EQL does

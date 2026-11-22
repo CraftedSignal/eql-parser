@@ -12,6 +12,7 @@ type BooleanOperator string
 const (
 	BooleanCondition BooleanOperator = "condition"
 	BooleanScalar    BooleanOperator = "scalar"
+	BooleanValue     BooleanOperator = "value"
 	BooleanAnd       BooleanOperator = "and"
 	BooleanOr        BooleanOperator = "or"
 )
@@ -31,6 +32,7 @@ type ConditionExpression struct {
 	ConditionIndex int                    `json:"condition_index"`
 	Children       []*ConditionExpression `json:"children,omitempty"`
 	Scalar         *ScalarPredicate       `json:"scalar,omitempty"`
+	Value          *ValuePredicate        `json:"value,omitempty"`
 }
 
 func buildConditionExpression(query *Query, conditions []Condition) *ConditionExpression {
@@ -103,6 +105,10 @@ func (b *eqlExpressionBuilder) expr(expr Expr, negated bool) *ConditionExpressio
 		}
 	case *Not:
 		return b.expr(typed.X, !negated)
+	}
+	if valuePredicateAtom(atom, b.budget) {
+		b.budget.node()
+		return &ConditionExpression{Operator: BooleanValue, Value: &ValuePredicate{Expression: valueExpressionFromAST(expr, b.budget), Negated: negated}}
 	}
 	// Extraction records all emissions from each AST atom. A scalar may consume
 	// flat best-effort conditions, but those indexes are never semantic leaves.
@@ -202,7 +208,7 @@ func remapConditionExpression(expression *ConditionExpression, indexMap []int) *
 }
 
 func remapConditionExpressionWithBudget(expression *ConditionExpression, indexMap []int, budget *parseBudget) *ConditionExpression {
-	if expression == nil || len(indexMap) == 0 {
+	if expression == nil || len(indexMap) == 0 && !expressionHasOperator(expression, BooleanValue) {
 		return expression
 	}
 	remapper := &conditionExpressionRemapper{indexMap: indexMap, budget: budget, ids: map[*ConditionExpression]int{}, interned: map[string]int{}}
@@ -248,6 +254,11 @@ func (r *conditionExpressionRemapper) remap(expression *ConditionExpression) *Co
 	}
 	switch expression.Operator {
 	case BooleanCondition:
+		if len(r.indexMap) == 0 {
+			// A zero/one-condition extraction has no merge map. Preserve its
+			// identity indexes when cloning a mixed condition/value tree.
+			return &ConditionExpression{Operator: BooleanCondition, ConditionIndex: expression.ConditionIndex}
+		}
 		if expression.ConditionIndex < 0 || expression.ConditionIndex >= len(r.indexMap) {
 			return nil
 		}
@@ -263,6 +274,11 @@ func (r *conditionExpressionRemapper) remap(expression *ConditionExpression) *Co
 		r.budget.addOutput(len(expression.Scalar.Syntax))
 		scalar := *expression.Scalar
 		return &ConditionExpression{Operator: BooleanScalar, Scalar: &scalar}
+	case BooleanValue:
+		if expression.Value == nil || expression.Scalar != nil || len(expression.Children) != 0 || expression.ConditionIndex != 0 {
+			valueExpressionFailure("invalid Boolean value leaf")
+		}
+		return &ConditionExpression{Operator: BooleanValue, Value: cloneValuePredicate(expression.Value, r.budget)}
 	case BooleanAnd, BooleanOr:
 		converted := &ConditionExpression{Operator: expression.Operator}
 		seen := map[int]bool{}
@@ -270,7 +286,7 @@ func (r *conditionExpressionRemapper) remap(expression *ConditionExpression) *Co
 			r.budget.check(1)
 			// Unknown calls need not be pure. Never deduplicate a scalar or
 			// a group containing one, even when its syntax repeats.
-			if expressionHasOperator(child, BooleanScalar) {
+			if expressionHasOperator(child, BooleanScalar) || expressionHasOperator(child, BooleanValue) {
 				converted.Children = append(converted.Children, child)
 				return
 			}
@@ -309,7 +325,7 @@ func equalConditionExpression(a, b *ConditionExpression) bool {
 	if a == nil || b == nil {
 		return a == b
 	}
-	if a.Operator != b.Operator || a.ConditionIndex != b.ConditionIndex || !equalScalarPredicate(a.Scalar, b.Scalar) || len(a.Children) != len(b.Children) {
+	if a.Operator != b.Operator || a.ConditionIndex != b.ConditionIndex || !equalScalarPredicate(a.Scalar, b.Scalar) || !equalValuePredicate(a.Value, b.Value) || len(a.Children) != len(b.Children) {
 		return false
 	}
 	for i := range a.Children {
