@@ -283,6 +283,12 @@ func (b *sigmaConditionBuilder) term(e *eql.ConditionExpression) (string, bool) 
 			return "", false
 		}
 		return b.selection(c, e.Scalar.Negated)
+	case eql.BooleanValue:
+		return "", false
+	case eql.BooleanAnd, eql.BooleanOr:
+		// Only explicit Boolean groups may recurse into child selections.
+	default:
+		return "", false
 	}
 	var parts []string
 	for _, child := range e.Children {

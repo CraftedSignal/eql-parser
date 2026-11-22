@@ -27,6 +27,7 @@ type SemanticExpression struct {
 	Condition *Condition            `json:"condition,omitempty"`
 	Children  []*SemanticExpression `json:"children,omitempty"`
 	Scalar    *ScalarPredicate      `json:"scalar,omitempty"`
+	Value     *ValuePredicate       `json:"value,omitempty"`
 }
 
 // SemanticSequence is the parser-owned semantic view of EQL sequence, join,
@@ -137,6 +138,11 @@ func semanticExpressionFromParseExpressionWithBudget(expression *ConditionExpres
 		budget.addOutput(len(expression.Scalar.Syntax))
 		scalar := *expression.Scalar
 		return &SemanticExpression{Operator: BooleanScalar, Scalar: &scalar}
+	case BooleanValue:
+		if expression.Value == nil || expression.Scalar != nil || len(expression.Children) != 0 || expression.ConditionIndex != 0 {
+			valueExpressionFailure("invalid Boolean value leaf")
+		}
+		return &SemanticExpression{Operator: BooleanValue, Value: cloneValuePredicate(expression.Value, budget)}
 	case BooleanAnd, BooleanOr:
 		converted := &SemanticExpression{Operator: expression.Operator}
 		for _, child := range expression.Children {
@@ -232,6 +238,12 @@ func semanticStepExpressionWithBudget(expression *SemanticExpression, step int, 
 		budget.addOutput(len(expression.Scalar.Syntax))
 		scalar := *expression.Scalar
 		copied.Scalar = &scalar
+	}
+	if expression.Operator == BooleanValue {
+		if expression.Condition != nil || expression.Scalar != nil || len(expression.Children) != 0 {
+			valueExpressionFailure("invalid semantic value leaf")
+		}
+		copied.Value = cloneValuePredicate(expression.Value, budget)
 	}
 	for _, child := range expression.Children {
 		copied.Children = append(copied.Children, semanticStepExpressionWithBudget(child, step, budget))

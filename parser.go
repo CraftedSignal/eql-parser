@@ -692,11 +692,11 @@ func (p *parser) parseNot() Expr {
 		p.budget.node()
 		return &Not{X: p.parseNot()}
 	}
-	return p.parsePredicated()
+	return p.parseComparison()
 }
 
 func (p *parser) parsePredicated() Expr {
-	v := p.parseComparison()
+	v := p.parsePrimary()
 
 	switch p.cur().Type {
 	case TokenNot:
@@ -893,7 +893,7 @@ func (p *parser) parseUnary() Expr {
 		p.budget.node()
 		return &Unary{Op: "+", X: p.parseUnary()}
 	}
-	return p.parsePrimary()
+	return p.parsePredicated()
 }
 
 func (p *parser) parsePrimary() Expr {

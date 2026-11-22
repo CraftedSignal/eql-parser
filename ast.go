@@ -312,11 +312,11 @@ func precedence(e Expr) int {
 	case *Not:
 		return 3
 	case *InExpr, *PatternExpr:
-		return 4
+		return 9
 	case *Unary:
 		return 8
 	default:
-		return 9
+		return 10
 	}
 }
 
@@ -358,7 +358,7 @@ func (e *Unary) render(b *strings.Builder) {
 }
 
 func (e *InExpr) render(b *strings.Builder) {
-	renderChild(b, e.X, 4, false)
+	renderChild(b, e.X, precedence(e), true)
 	if e.Negated {
 		b.WriteString(" not")
 	}
@@ -372,7 +372,7 @@ func (e *InExpr) render(b *strings.Builder) {
 }
 
 func (e *PatternExpr) render(b *strings.Builder) {
-	renderChild(b, e.X, 4, false)
+	renderChild(b, e.X, precedence(e), true)
 	b.WriteByte(' ')
 	b.WriteString(string(e.Kind))
 	if e.Insensitive {
