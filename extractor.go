@@ -37,7 +37,8 @@ type Condition struct {
 	PredicateSyntax string   `json:"predicate_syntax,omitempty"` // complete canonical atomic predicate
 }
 
-// SequenceStepInfo describes one bracketed event of a sequence/join/sample.
+// SequenceStepInfo describes a normalized term of a sequence/join/sample.
+// A repeated until can add a positive term; Parse retains authored placement.
 // Subquery holds a self-contained recursive extraction of the step's event
 // filter (`[category where ...]`), the EQL analog of a join subsearch — its
 // conditions are step-relative (SequenceStep 0) and independently inspectable.
@@ -310,49 +311,58 @@ func (ex *extractor) extractSequence(s *Sequence) {
 	}
 
 	for i, st := range s.Steps {
-		stepInfo := SequenceStepInfo{Missing: st.Missing, Runs: st.Runs}
-		if st.Query != nil {
-			stepInfo.EventCategory = st.Query.Category
-			if st.Query.CategoryAny {
-				stepInfo.EventCategory = "any"
-			}
-		}
-		for _, by := range st.By {
-			stepInfo.ByKeys = append(stepInfo.ByKeys, correlationKeyFromExpr(by, ex.budget))
-			stepInfo.ByFields = append(stepInfo.ByFields, ex.registerJoinKey(by)...)
-		}
-		before := len(ex.res.Conditions)
-		if st.Query != nil {
-			ex.enterEventQuery(st.Query, i, false, st.Missing, "")
-			stepInfo.Subquery = extractSubqueryWithBudget(st.Query, ex.budget)
-		}
-		stepInfo.ConditionCount = len(ex.res.Conditions) - before
-		ex.budget.addOutput(len(stepInfo.EventCategory))
-		info.Steps = append(info.Steps, stepInfo)
+		info.Steps = append(info.Steps, ex.extractSequenceTerm(st, i, false, st.Runs))
 	}
 
 	if s.Until != nil {
-		untilInfo := SequenceStepInfo{Missing: s.Until.Missing}
-		if s.Until.Query != nil {
-			untilInfo.EventCategory = s.Until.Query.Category
-			if s.Until.Query.CategoryAny {
-				untilInfo.EventCategory = "any"
+		untilRuns := 0 // Preserve the existing absent/explicit-one convention.
+		// Elastic expands repeated terms before taking the final term as until.
+		// Keep positive repetition compact, without mutating the authored AST.
+		if len(ex.res.Errors) == 0 && s.Kind == KindSequence && !s.Until.Missing &&
+			s.Until.Query != nil && s.Until.Runs >= 2 && s.Until.Runs <= 100 {
+			ex.budget.check(len(s.Until.WithKey))
+			if strings.EqualFold(s.Until.WithKey, "runs") {
+				info.Steps = append(info.Steps, ex.extractSequenceTerm(s.Until, len(info.Steps), false, s.Until.Runs-1))
+				untilRuns = 1
 			}
 		}
-		for _, by := range s.Until.By {
-			untilInfo.ByKeys = append(untilInfo.ByKeys, correlationKeyFromExpr(by, ex.budget))
-			untilInfo.ByFields = append(untilInfo.ByFields, ex.registerJoinKey(by)...)
-		}
-		before := len(ex.res.Conditions)
-		if s.Until.Query != nil {
-			ex.enterEventQuery(s.Until.Query, len(s.Steps), true, false, "")
-			untilInfo.Subquery = extractSubqueryWithBudget(s.Until.Query, ex.budget)
-		}
-		untilInfo.ConditionCount = len(ex.res.Conditions) - before
+		untilInfo := ex.extractSequenceTerm(s.Until, len(info.Steps), true, untilRuns)
 		info.Until = &untilInfo
 	}
 
 	ex.res.Sequence = info
+}
+
+// extractSequenceTerm gives each normalized term its own subquery and keys.
+// runs is explicit so normalization never edits the parser-owned AST.
+func (ex *extractor) extractSequenceTerm(st *SequenceStep, index int, fromUntil bool, runs int) SequenceStepInfo {
+	category := ""
+	if st.Query != nil {
+		category = st.Query.Category
+		if st.Query.CategoryAny {
+			category = "any"
+		}
+	}
+	// Keep the ordinary positive-term charge before nested materialization or
+	// append, including the new positive copy. Final until descriptors retain
+	// their historical accounting; all nested work shares the request budget.
+	if !fromUntil {
+		ex.budget.addOutput(len(category))
+	}
+	info := SequenceStepInfo{Missing: st.Missing, Runs: runs, EventCategory: category}
+	for _, by := range st.By {
+		info.ByKeys = append(info.ByKeys, correlationKeyFromExpr(by, ex.budget))
+		info.ByFields = append(info.ByFields, ex.registerJoinKey(by)...)
+	}
+	before := len(ex.res.Conditions)
+	if st.Query != nil {
+		// Preserve existing malformed-until partial-result context: an until
+		// descriptor may be Missing, but its flat conditions carry FromUntil.
+		ex.enterEventQuery(st.Query, index, fromUntil, st.Missing && !fromUntil, "")
+		info.Subquery = extractSubqueryWithBudget(st.Query, ex.budget)
+	}
+	info.ConditionCount = len(ex.res.Conditions) - before
+	return info
 }
 
 // registerJoinKey records the fields of a by-clause expression and returns

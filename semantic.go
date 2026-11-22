@@ -41,7 +41,9 @@ type SemanticSequence struct {
 	Until     *SemanticSequenceStep  `json:"until,omitempty"`
 }
 
-// SemanticSequenceStep is one step in an EQL correlation query.
+// SemanticSequenceStep is one normalized term in an EQL correlation query.
+// Runs carries multiplicity; the semantic Boolean tree is only a predicate
+// projection, not an evaluator of temporal ordering or repeated occurrences.
 type SemanticSequenceStep struct {
 	EventCategory string           `json:"event_category"`
 	ByFields      []string         `json:"by_fields,omitempty"`
@@ -199,8 +201,8 @@ func combineSemanticExpressions(operator BooleanOperator, left, right *SemanticE
 
 // semanticSequenceExpressionWithBudget builds a correlation's root tree: the
 // AND of its positive steps' own trees, so each step keeps its grouping. A
-// missing event or an until clause is not met by the matched events; Sequence
-// still describes them.
+// missing event or the final until term is excluded. Repeated-until positive
+// terms have already been normalized into Steps; Runs carries multiplicity.
 func semanticSequenceExpressionWithBudget(sequence *SemanticSequence, budget *parseBudget) *SemanticExpression {
 	var expression *SemanticExpression
 	for step := range sequence.Steps {
