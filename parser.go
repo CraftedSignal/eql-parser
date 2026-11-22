@@ -474,6 +474,15 @@ func MaxSpanDuration(span string) (int64, bool) {
 	for i < len(span) && (span[i] >= '0' && span[i] <= '9' || span[i] == '.') {
 		i++
 	}
+	// Integer milliseconds already have the requested unit. Avoid rounding
+	// their exact value through float64 before checking the int64 range.
+	if i > 0 && strings.EqualFold(span[i:], "ms") && !strings.ContainsRune(span[:i], '.') {
+		ms, err := strconv.ParseUint(span[:i], 10, 63)
+		if err != nil {
+			return 0, false
+		}
+		return int64(ms), true
+	}
 	num, err := strconv.ParseFloat(span[:i], 64)
 	if err != nil {
 		return 0, false
