@@ -14,13 +14,13 @@ func NormalizeQuery(query string) string {
 	// Strip UTF-8 BOM.
 	q = strings.TrimPrefix(q, "\ufeff")
 
-	// Replace typographic characters that word processors substitute, but
-	// only outside string literals: a value may hold an en dash (a Windows
-	// flag variant) or a curly quote that it must match as written.
-	q = outsideStringLiterals(q, typographicReplacer.Replace)
-
-	// Strip markdown code fences: ```eql ... ``` or ``` ... ```.
+	// Remove saved-query fences before protecting backtick identifiers.
 	q = stripCodeFences(q)
+
+	// Replace typographic characters that word processors substitute, but
+	// only outside string literals and escaped identifiers: both may hold
+	// typographic characters that must remain distinct from ASCII spelling.
+	q = outsideStringLiterals(q, typographicReplacer.Replace)
 
 	// Convert literal \n / \r\n / \t escape sequences outside string
 	// literals into real whitespace (queries extracted from JSON often
@@ -38,7 +38,32 @@ func NormalizeQuery(query string) string {
 
 func stripCodeFences(q string) string {
 	trimmed := strings.TrimSpace(q)
-	if !strings.HasPrefix(trimmed, "```") {
+	// Typography repair can also make outer artifact-only lines empty. Peel
+	// those lines only from the detection view; nonfenced input still returns q.
+	for trimmed != "" {
+		line, rest, found := strings.Cut(trimmed, "\n")
+		if strings.TrimSpace(typographicReplacer.Replace(line)) != "" {
+			break
+		}
+		if !found {
+			return q
+		}
+		trimmed = rest
+	}
+	for trimmed != "" {
+		lastBreak := strings.LastIndexByte(trimmed, '\n')
+		if strings.TrimSpace(typographicReplacer.Replace(trimmed[lastBreak+1:])) != "" {
+			break
+		}
+		if lastBreak < 0 {
+			return q
+		}
+		trimmed = trimmed[:lastBreak]
+	}
+	opening, _, _ := strings.Cut(trimmed, "\n")
+	// Fence recognition historically followed typography repair. Apply that
+	// repair only to boundary detection here, keeping interior query bytes raw.
+	if !strings.HasPrefix(strings.TrimSpace(typographicReplacer.Replace(opening)), "```") {
 		return q
 	}
 	lines := strings.Split(trimmed, "\n")
@@ -46,16 +71,16 @@ func stripCodeFences(q string) string {
 	// already known to start with ```. Since trimmed has no trailing blank
 	// lines, the closing fence is the last line when present.
 	lines = lines[1:]
-	if len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "```" {
+	if len(lines) > 0 && strings.TrimSpace(typographicReplacer.Replace(lines[len(lines)-1])) == "```" {
 		lines = lines[:len(lines)-1]
 	}
 	return strings.Join(lines, "\n")
 }
 
 // decodeEscapedWhitespace converts literal backslash-n / backslash-r /
-// backslash-t sequences that appear outside string literals into real
-// whitespace. Inside strings they are legitimate escapes and left alone, and
-// comments are copied as written (see commentEnd).
+// backslash-t sequences that appear outside string literals and escaped
+// identifiers into real whitespace. Protected spans and comments are copied
+// as written (see commentEnd).
 func decodeEscapedWhitespace(q string) string {
 	if !strings.Contains(q, `\n`) && !strings.Contains(q, `\r`) && !strings.Contains(q, `\t`) {
 		return q
@@ -66,6 +91,12 @@ func decodeEscapedWhitespace(q string) string {
 	i := 0
 	for i < len(q) {
 		c := q[i]
+		if c == '`' {
+			end := scanBacktickEnd(q, i)
+			b.WriteString(q[i:end])
+			i = end
+			continue
+		}
 
 		// Skip over comments verbatim.
 		if end := commentEnd(q, i, escapedLines); end > i {
@@ -102,6 +133,22 @@ func decodeEscapedWhitespace(q string) string {
 		i++
 	}
 	return b.String()
+}
+
+// scanBacktickEnd follows the lexer: doubled backticks are identifier content,
+// a single backtick closes it, and an unterminated span extends to EOF.
+func scanBacktickEnd(q string, i int) int {
+	for j := i + 1; j < len(q); j++ {
+		if q[j] != '`' {
+			continue
+		}
+		if j+1 < len(q) && q[j+1] == '`' {
+			j++
+			continue
+		}
+		return j + 1
+	}
+	return len(q)
 }
 
 // scanStringEnd returns the index just past the string literal starting at
@@ -152,7 +199,7 @@ var typographicReplacer = strings.NewReplacer(
 )
 
 // outsideStringLiterals applies fix to the query text between string
-// literals and keeps the literals as written. A curly quote that fix turns
+// literals and escaped identifiers and keeps those spans as written. A curly quote that fix turns
 // into a straight quote then opens or closes a literal as usual. A quote
 // inside a comment opens no literal.
 func outsideStringLiterals(q string, fix func(string) string) string {
@@ -161,6 +208,13 @@ func outsideStringLiterals(q string, fix func(string) string) string {
 	b.Grow(len(q))
 	start := 0
 	for i := 0; i < len(q); {
+		if q[i] == '`' {
+			b.WriteString(fix(q[start:i]))
+			end := scanBacktickEnd(q, i)
+			b.WriteString(q[i:end])
+			start, i = end, end
+			continue
+		}
 		if end := commentEnd(q, i, escapedLines); end > i {
 			i = end
 			continue
