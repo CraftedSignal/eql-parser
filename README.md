@@ -73,6 +73,22 @@ func main() {
 
 ### Correlation (sequence / join / sample)
 
+`Parse` preserves authored term placement and `with runs=N` counts.
+`ExtractConditions` and `AnalyzeQuery` expose normalized correlation terms:
+for a recognized, nonmissing sequence `until C with runs=N` with N in 2..100,
+one independent positive C term has `Runs=N-1`, followed by an independent
+final until C with `Runs=1`. This follows Elastic's repeated-term expansion
+before its final until filter is selected, without allocating N copies.
+Absent or explicit `runs=1` retains the existing `Until.Runs=0` convention.
+The AST remains unchanged; malformed/unknown modifiers keep existing errors.
+Queries with existing parse errors retain their prior partial term structure.
+
+The semantic root projects positive terms' predicates. `Steps[].Runs` retains
+correlation multiplicity; the Boolean tree alone does not express repetitions,
+ordering, absence or expiration. This metadata does not execute EQL or certify
+all backend correlation limits. The added term/subquery and semantic copies
+share existing request budgets; resource/cancellation failures remain atomic.
+
 ```go
 result := eql.ExtractConditions(`
 sequence by process.entity_id with maxspan=5m
