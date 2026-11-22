@@ -9,6 +9,10 @@ import (
 // changing the meaning of well-formed queries. ExtractConditions applies it
 // automatically; Parse does not.
 func NormalizeQuery(query string) string {
+	return normalizeQueryWithBudget(query, nil)
+}
+
+func normalizeQueryWithBudget(query string, budget *parseBudget) string {
 	q := query
 
 	// Strip UTF-8 BOM.
@@ -20,12 +24,12 @@ func NormalizeQuery(query string) string {
 	// Replace typographic characters that word processors substitute, but
 	// only outside string literals and escaped identifiers: both may hold
 	// typographic characters that must remain distinct from ASCII spelling.
-	q = outsideStringLiterals(q, typographicReplacer.Replace)
+	q = outsideStringLiterals(q, typographicReplacer.Replace, budget)
 
 	// Convert literal \n / \r\n / \t escape sequences outside string
 	// literals into real whitespace (queries extracted from JSON often
 	// carry them).
-	q = decodeEscapedWhitespace(q)
+	q = decodeEscapedWhitespace(q, budget)
 
 	// Drop trailing semicolons (saved-query artifacts).
 	q = strings.TrimRight(q, " \t\r\n")
@@ -81,7 +85,8 @@ func stripCodeFences(q string) string {
 // backslash-t sequences that appear outside string literals and escaped
 // identifiers into real whitespace. Protected spans and comments are copied
 // as written (see commentEnd).
-func decodeEscapedWhitespace(q string) string {
+
+func decodeEscapedWhitespace(q string, budget *parseBudget) string {
 	if !strings.Contains(q, `\n`) && !strings.Contains(q, `\r`) && !strings.Contains(q, `\t`) {
 		return q
 	}
@@ -99,7 +104,7 @@ func decodeEscapedWhitespace(q string) string {
 		}
 
 		// Skip over comments verbatim.
-		if end := commentEnd(q, i, escapedLines); end > i {
+		if end := commentEnd(q, i, escapedLines, budget); end > i {
 			b.WriteString(q[i:end])
 			i = end
 			continue
@@ -202,7 +207,8 @@ var typographicReplacer = strings.NewReplacer(
 // literals and escaped identifiers and keeps those spans as written. A curly quote that fix turns
 // into a straight quote then opens or closes a literal as usual. A quote
 // inside a comment opens no literal.
-func outsideStringLiterals(q string, fix func(string) string) string {
+
+func outsideStringLiterals(q string, fix func(string) string, budget *parseBudget) string {
 	escapedLines := !strings.Contains(q, "\n")
 	var b strings.Builder
 	b.Grow(len(q))
@@ -215,7 +221,7 @@ func outsideStringLiterals(q string, fix func(string) string) string {
 			start, i = end, end
 			continue
 		}
-		if end := commentEnd(q, i, escapedLines); end > i {
+		if end := commentEnd(q, i, escapedLines, budget); end > i {
 			i = end
 			continue
 		}
@@ -233,18 +239,35 @@ func outsideStringLiterals(q string, fix func(string) string) string {
 }
 
 // commentEnd returns the index just past the comment that starts at q[i], or
-// i when none starts there. As in the lexer, a block comment ends after the
-// first */ and a line comment at the line break. A query with escapedLines
+// i when none starts there. As in the lexer, block comments nest and line
+// comments end at the line break. A query with escapedLines
 // has no line break of its own but carries them as a literal \n (taken from
 // JSON), so there that ends a line comment instead.
-func commentEnd(q string, i int, escapedLines bool) int {
+
+func commentEnd(q string, i int, escapedLines bool, budget *parseBudget) int {
 	if q[i] != '/' || i+1 >= len(q) {
 		return i
 	}
 	switch q[i+1] {
 	case '*':
-		if end := strings.Index(q[i+2:], "*/"); end >= 0 {
-			return i + 2 + end + 2
+		depth := 1
+		for j := i + 2; j < len(q); {
+			// Normalization work was reserved by the caller; check only
+			// cancellation here, without charging the scan twice.
+			budget.check(0)
+			switch {
+			case j+1 < len(q) && q[j] == '/' && q[j+1] == '*':
+				depth++
+				j += 2
+			case j+1 < len(q) && q[j] == '*' && q[j+1] == '/':
+				depth--
+				j += 2
+				if depth == 0 {
+					return j
+				}
+			default:
+				j++
+			}
 		}
 		return len(q)
 	case '/':
