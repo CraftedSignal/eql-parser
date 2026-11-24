@@ -285,6 +285,16 @@ func TestLexPositions(t *testing.T) {
 	}
 }
 
+func TestLexPositionsCountUnicodeRunes(t *testing.T) {
+	toks := lex("é where\n日本語 true")
+	if toks[1].Line != 1 || toks[1].Col != 3 {
+		t.Errorf("where at %d:%d, want 1:3", toks[1].Line, toks[1].Col)
+	}
+	if toks[3].Line != 2 || toks[3].Col != 5 {
+		t.Errorf("true at %d:%d, want 2:5", toks[3].Line, toks[3].Col)
+	}
+}
+
 func TestLexErrorTokenForGarbage(t *testing.T) {
 	l := newLexer("a @ b # c")
 	if len(l.errs) < 2 {
