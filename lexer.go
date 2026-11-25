@@ -324,24 +324,42 @@ func (l *lexer) lexNumber(start, startLine, startCol int) {
 		case 'x', 'X':
 			l.advance()
 			l.advance()
+			digitsStart := l.pos
 			for l.pos < len(l.input) && isHexDigit(l.input[l.pos]) {
 				l.advance()
+			}
+			if l.pos == digitsStart {
+				l.errorf(startLine, startCol, "radix-prefixed integer requires at least one digit")
+				l.emit(TokenError, start, startLine, startCol, l.input[start:l.pos])
+				return
 			}
 			l.emit(TokenNumber, start, startLine, startCol, l.input[start:l.pos])
 			return
 		case 'o', 'O':
 			l.advance()
 			l.advance()
+			digitsStart := l.pos
 			for l.pos < len(l.input) && l.input[l.pos] >= '0' && l.input[l.pos] <= '7' {
 				l.advance()
+			}
+			if l.pos == digitsStart {
+				l.errorf(startLine, startCol, "radix-prefixed integer requires at least one digit")
+				l.emit(TokenError, start, startLine, startCol, l.input[start:l.pos])
+				return
 			}
 			l.emit(TokenNumber, start, startLine, startCol, l.input[start:l.pos])
 			return
 		case 'b', 'B':
 			l.advance()
 			l.advance()
+			digitsStart := l.pos
 			for l.pos < len(l.input) && (l.input[l.pos] == '0' || l.input[l.pos] == '1') {
 				l.advance()
+			}
+			if l.pos == digitsStart {
+				l.errorf(startLine, startCol, "radix-prefixed integer requires at least one digit")
+				l.emit(TokenError, start, startLine, startCol, l.input[start:l.pos])
+				return
 			}
 			l.emit(TokenNumber, start, startLine, startCol, l.input[start:l.pos])
 			return

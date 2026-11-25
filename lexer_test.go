@@ -268,6 +268,14 @@ func TestLexRadixIntegers(t *testing.T) {
 	}
 }
 
+func TestParseExpressionRejectsEmptyRadixIntegers(t *testing.T) {
+	for _, literal := range []string{"0x", "0o", "0b"} {
+		if _, err := ParseExpression("field == " + literal); err == nil {
+			t.Errorf("ParseExpression accepted empty radix literal %q", literal)
+		}
+	}
+}
+
 func TestLexUnicodeIdent(t *testing.T) {
 	toks := lex("dätei where true")
 	if toks[0].Type != TokenIdent || toks[0].Text != "dätei" {
