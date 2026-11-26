@@ -743,6 +743,21 @@ func TestExtractEmptyQuery(t *testing.T) {
 	}
 }
 
+func TestExtractLineCommentStopsAtCarriageReturn(t *testing.T) {
+	for _, tc := range []struct{ name, lineEnding string }{
+		{"LF", "\n"},
+		{"CRLF", "\r\n"},
+		{"CR", "\r"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			query := "process // trailing comment" + tc.lineEnding + `where process.name == "cmd.exe"`
+			res := ExtractConditions(query)
+			requireNoErrors(t, res)
+			requireConditions(t, res, `process.name == cmd.exe`)
+		})
+	}
+}
+
 func TestExtractGarbage(t *testing.T) {
 	for _, q := range []string{
 		"@@@@@@",

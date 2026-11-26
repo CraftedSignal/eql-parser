@@ -55,6 +55,15 @@ func (l *lexer) advance() {
 	if l.pos >= len(l.input) {
 		return
 	}
+	if l.input[l.pos] == '\r' {
+		l.pos++
+		if l.pos < len(l.input) && l.input[l.pos] == '\n' {
+			l.pos++
+		}
+		l.line++
+		l.col = 1
+		return
+	}
 	if l.input[l.pos] == '\n' {
 		l.line++
 		l.col = 1
@@ -86,7 +95,7 @@ func (l *lexer) run() {
 			l.advance()
 
 		case c == '/' && l.peek(1) == '/':
-			for l.pos < len(l.input) && l.input[l.pos] != '\n' {
+			for l.pos < len(l.input) && l.input[l.pos] != '\n' && l.input[l.pos] != '\r' {
 				l.advance()
 			}
 
@@ -459,7 +468,7 @@ func (l *lexer) lexString(start, startLine, startCol int, quote byte, raw bool) 
 			closed = true
 			break
 		}
-		if c == '\n' {
+		if c == '\n' || c == '\r' {
 			// EQL strings are single-line; treat a bare newline as
 			// termination so one bad string doesn't eat the whole query.
 			break

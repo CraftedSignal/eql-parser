@@ -197,6 +197,20 @@ comment */ true`)
 	}
 }
 
+func TestLexLineEndingPositions(t *testing.T) {
+	for name, lineEnding := range map[string]string{"LF": "\n", "CRLF": "\r\n", "CR": "\r"} {
+		t.Run(name, func(t *testing.T) {
+			tokens := lex("first" + lineEnding + "second")
+			if tokens[1].Line != 2 || tokens[1].Col != 1 {
+				t.Fatalf("second token position = %d:%d, want 2:1", tokens[1].Line, tokens[1].Col)
+			}
+			if tokens[2].Line != 2 || tokens[2].Col != 7 {
+				t.Errorf("EOF position = %d:%d, want 2:7", tokens[2].Line, tokens[2].Col)
+			}
+		})
+	}
+}
+
 func TestLexToleratedForeignOperators(t *testing.T) {
 	toks := lex("a && b || !c")
 	if toks[1].Type != TokenAnd || toks[3].Type != TokenOr || toks[4].Type != TokenNot {
