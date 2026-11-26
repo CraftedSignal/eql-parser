@@ -490,12 +490,32 @@ func MaxSpanDuration(span string) (int64, bool) {
 		return 0, false
 	}
 	i := 0
-	for i < len(span) && (span[i] >= '0' && span[i] <= '9' || span[i] == '.') {
+	for i < len(span) && span[i] >= '0' && span[i] <= '9' {
 		i++
+	}
+	if i < len(span) && span[i] == '.' {
+		i++
+		for i < len(span) && span[i] >= '0' && span[i] <= '9' {
+			i++
+		}
+	}
+	if i < len(span) && (span[i] == 'e' || span[i] == 'E') {
+		exponentStart := i
+		i++
+		if i < len(span) && (span[i] == '+' || span[i] == '-') {
+			i++
+		}
+		exponentDigits := i
+		for i < len(span) && span[i] >= '0' && span[i] <= '9' {
+			i++
+		}
+		if i == exponentDigits {
+			i = exponentStart
+		}
 	}
 	// Explicit whole-millisecond units can be multiplied exactly. Keep the
 	// decimal, sub-millisecond and unitless compatibility paths below.
-	if i > 0 && !strings.ContainsRune(span[:i], '.') {
+	if i > 0 && !strings.ContainsAny(span[:i], ".eE") {
 		var factor uint64
 		switch strings.ToLower(span[i:]) {
 		case "ms":
