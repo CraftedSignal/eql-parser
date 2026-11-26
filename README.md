@@ -238,19 +238,18 @@ A bidirectional Sigma ↔ EQL translator ships in `cmd/generated-corpus` (kept
 out of the dependency-free core, matching the sibling parsers). Correctness is
 enforced by a round-trip corpus: translating a rule to the other dialect and
 re-parsing it must reproduce the same set of conditions under a shared
-canonical vocabulary. Against the SigmaHQ corpus (3,100+ rules) and the real
-EQL corpus, **every field-translatable rule round-trips with zero condition
-loss in both directions** — constructs with no faithful cross-dialect form
+canonical vocabulary. Across the SigmaHQ and real EQL corpora, **every
+field-translatable rule round-trips with zero condition loss in both
+directions** — constructs with no faithful cross-dialect form
 (EQL sequences, Sigma free-text keywords, escaped wildcards, unicode-obfuscation
 values) are explicitly classified, never silently mistranslated. Regenerate
 with `make sigma-corpus`.
 
-At larger scale, a **100,000-rule corpus** — ~46k real Sigma rules scraped from
-68 GitHub repositories plus the CraftedSignal library, deduped, combined with
-generated complex rules — runs through parse → translate → round-trip with
-**zero panics and 100% round-trip fidelity** on every field-translatable rule.
-The translated EQL (~94k queries) is committed and re-parsed by the core test
-suite. Build with `make rules-corpus`.
+Separate Sigma ↔ EQL translation checks combine rules from real repositories
+and the CraftedSignal library with generated complex cases, then verify
+parse → translate → round-trip fidelity for every field-translatable rule.
+These are differential and stress checks, not a substitute for the real EQL
+detection-rule corpus. Build with `make rules-corpus`.
 
 ## Testing
 
@@ -271,14 +270,14 @@ large corpora. CI checks out the corpus files with Git LFS and uploads
 `coverage.out` to Codecov.
 
 The suite includes unit tests for the lexer, parser, and extractor; a
-round-trip property test (`parse → render → parse` is a fixpoint); the full
-**1,209 real detection rules** (elastic/detection-rules + endgameinc/eqllib),
-all parsing cleanly; a curated valid/adversarial corpus; bounded-AST
-differential testing with an independent oracle; a **500,000-query** generated
-corpus (0 panics, 100% parse rate at scale); a Sigma ↔ EQL round-trip corpus;
-native fuzzing (millions of executions); and a 100k-iteration structured stress
-test plus ~200k adversarial mutation runs — all with zero panics, at **99.9%
-statement coverage**.
+round-trip property test (`parse → render → parse` is a fixpoint); real
+detection-rule corpora; curated valid and adversarial inputs; bounded-AST
+differential testing with an independent oracle; Sigma ↔ EQL translation
+checks; native fuzzing; and structured stress and adversarial mutation runs.
+Generated differential and stress inputs supplement these checks but are not
+counted as real-world query coverage. The real-rule coverage includes
+sequences, joins, samples, predicates, typed values, nested expressions,
+correlation clauses, functions, and pipes.
 
 ## Dialect notes
 
