@@ -713,6 +713,15 @@ func TestNormalizeCodeFence(t *testing.T) {
 	requireConditions(t, res, `process.name == cmd.exe`)
 }
 
+func TestNormalizeCodeFenceAcrossLineEndings(t *testing.T) {
+	for _, lineEnding := range []string{"\n", "\r\n", "\r"} {
+		query := "```eql" + lineEnding + `process where process.name == "cmd.exe"` + lineEnding + "```"
+		res := ExtractConditions(query)
+		requireNoErrors(t, res)
+		requireConditions(t, res, `process.name == cmd.exe`)
+	}
+}
+
 func TestNormalizeEscapedNewlines(t *testing.T) {
 	res := ExtractConditions(`process where process.name == "cmd.exe"\nand user.name == "root"`)
 	requireNoErrors(t, res)

@@ -41,7 +41,7 @@ func normalizeQueryWithBudget(query string, budget *parseBudget) string {
 }
 
 func stripCodeFences(q string) string {
-	trimmed := strings.TrimSpace(q)
+	trimmed := strings.TrimSpace(strings.ReplaceAll(strings.ReplaceAll(q, "\r\n", "\n"), "\r", "\n"))
 	// Typography repair can also make outer artifact-only lines empty. Peel
 	// those lines only from the detection view; nonfenced input still returns q.
 	for trimmed != "" {
