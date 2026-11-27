@@ -26,7 +26,7 @@ func normalizeQueryWithBudget(query string, budget *parseBudget) string {
 	// typographic characters that must remain distinct from ASCII spelling.
 	q = outsideStringLiterals(q, typographicReplacer.Replace, budget)
 
-	// Convert literal \n / \r\n / \t escape sequences outside string
+	// Convert literal \n / \r\n / \r / \t escape sequences outside string
 	// literals into real whitespace (queries extracted from JSON often
 	// carry them).
 	q = decodeEscapedWhitespace(q, budget)
@@ -90,7 +90,7 @@ func decodeEscapedWhitespace(q string, budget *parseBudget) string {
 	if !strings.Contains(q, `\n`) && !strings.Contains(q, `\r`) && !strings.Contains(q, `\t`) {
 		return q
 	}
-	escapedLines := !strings.Contains(q, "\n")
+	escapedLines := !strings.ContainsAny(q, "\r\n")
 	var b strings.Builder
 	b.Grow(len(q))
 	i := 0
@@ -185,7 +185,7 @@ func scanStringEnd(q string, i int) int {
 		if q[j] == quote {
 			return j + 1
 		}
-		if q[j] == '\n' {
+		if q[j] == '\r' || q[j] == '\n' {
 			// EQL strings are single-line; treat as unterminated.
 			return j
 		}
@@ -209,7 +209,7 @@ var typographicReplacer = strings.NewReplacer(
 // inside a comment opens no literal.
 
 func outsideStringLiterals(q string, fix func(string) string, budget *parseBudget) string {
-	escapedLines := !strings.Contains(q, "\n")
+	escapedLines := !strings.ContainsAny(q, "\r\n")
 	var b strings.Builder
 	b.Grow(len(q))
 	start := 0
@@ -240,9 +240,9 @@ func outsideStringLiterals(q string, fix func(string) string, budget *parseBudge
 
 // commentEnd returns the index just past the comment that starts at q[i], or
 // i when none starts there. As in the lexer, block comments nest and line
-// comments end at the line break. A query with escapedLines
-// has no line break of its own but carries them as a literal \n (taken from
-// JSON), so there that ends a line comment instead.
+// comments end at the line break. A query with escapedLines has no line break
+// of its own but carries them as literal \n or \r sequences (taken from JSON),
+// so those end a line comment instead.
 
 func commentEnd(q string, i int, escapedLines bool, budget *parseBudget) int {
 	if q[i] != '/' || i+1 >= len(q) {
@@ -271,11 +271,17 @@ func commentEnd(q string, i int, escapedLines bool, budget *parseBudget) int {
 		}
 		return len(q)
 	case '/':
-		lineBreak := "\n"
 		if escapedLines {
-			lineBreak = `\n`
+			end := strings.Index(q[i:], `\n`)
+			if cr := strings.Index(q[i:], `\r`); cr >= 0 && (end < 0 || cr < end) {
+				end = cr
+			}
+			if end >= 0 {
+				return i + end
+			}
+			return len(q)
 		}
-		if end := strings.Index(q[i:], lineBreak); end >= 0 {
+		if end := strings.IndexAny(q[i:], "\r\n"); end >= 0 {
 			return i + end
 		}
 		return len(q)

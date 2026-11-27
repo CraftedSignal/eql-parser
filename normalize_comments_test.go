@@ -12,6 +12,7 @@ func TestNormalizeEscapedNewlineEndsComment(t *testing.T) {
 	for _, query := range []string{
 		`process where a == 1 // note\nand b == 2`,
 		`process where a == 1 // note\r\nand b == 2`,
+		`process where a == 1 // note\rand b == 2`,
 		`process where a == 1 /* user's */\nand b == 2`,
 		`process where a == 1 /* see http://x */\nand b == 2`,
 		`process where a == 1 // don't\nand b == 2`,
@@ -39,6 +40,17 @@ func TestNormalizeLineCommentKeepsEscapeText(t *testing.T) {
 	res := ExtractConditions("process where a == 1 // C:\\Windows\\notepad.exe\nand b == 2")
 	requireNoErrors(t, res)
 	requireConditions(t, res, "a == 1", "b == 2")
+}
+
+func TestNormalizeCROnlyCommentPreservesFollowingLiteral(t *testing.T) {
+	query := "process where a == 1 // comment\rand b == \"x–y\""
+	want := query
+	if got := NormalizeQuery(query); got != want {
+		t.Fatalf("NormalizeQuery() = %q, want %q", got, want)
+	}
+	res := ExtractConditions(query)
+	requireNoErrors(t, res)
+	requireConditions(t, res, "a == 1", "b == x–y")
 }
 
 // A quote inside a comment opens no string literal, so the literal after the

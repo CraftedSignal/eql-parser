@@ -46,3 +46,18 @@ func TestLegacyRawStringEndsAtLineBreak(t *testing.T) {
 		t.Errorf("errors = %q, want one unterminated string", res.Errors)
 	}
 }
+
+func TestLegacyRawStringTrailingEscapedQuoteBeforeLineBreak(t *testing.T) {
+	for _, tc := range []struct{ name, lineEnding string }{
+		{"LF", "\n"},
+		{"CRLF", "\r\n"},
+		{"CR", "\r"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			query := "process where a == ?\"x\\\"" + tc.lineEnding + "and b == \"y\""
+			res := ExtractConditions(query)
+			requireNoErrors(t, res)
+			requireConditions(t, res, "a == x\\", "b == y")
+		})
+	}
+}

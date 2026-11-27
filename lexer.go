@@ -586,7 +586,7 @@ func hexValue(c byte) int {
 // the string; failing that, the last escaped quote on the line does.
 func rawStringEnd(s string, i int, quote byte) int {
 	end := -1
-	for ; i < len(s) && s[i] != '\n'; i++ {
+	for ; i < len(s) && s[i] != '\r' && s[i] != '\n'; i++ {
 		if s[i] != quote {
 			continue
 		}
