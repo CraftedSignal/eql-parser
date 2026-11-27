@@ -53,6 +53,13 @@ func TestNormalizeCROnlyCommentPreservesFollowingLiteral(t *testing.T) {
 	requireConditions(t, res, "a == 1", "b == x–y")
 }
 
+func TestNormalizeCROnlyUnterminatedStringStopsAtLineBoundary(t *testing.T) {
+	query := "process where a == \"unterminated\rand b == \"x–y\" and c == \"z–w\""
+	if got := NormalizeQuery(query); got != query {
+		t.Fatalf("NormalizeQuery() = %q, want %q", got, query)
+	}
+}
+
 // A quote inside a comment opens no string literal, so the literal after the
 // comment keeps its typographic characters.
 func TestNormalizeQuoteInsideCommentKeepsLiteral(t *testing.T) {
