@@ -778,6 +778,9 @@ func (p *parser) parseParenList() []Expr {
 		if !p.accept(TokenComma) {
 			break
 		}
+		if p.cur().Type == TokenRParen || p.cur().Type == TokenEOF {
+			p.errorAt(p.cur(), "expected expression after ',' in list")
+		}
 	}
 	if _, ok := p.expect(TokenRParen); !ok {
 		p.skipTo(TokenRParen, TokenPipe, TokenRBrack)
