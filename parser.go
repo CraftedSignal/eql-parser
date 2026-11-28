@@ -565,6 +565,9 @@ func (p *parser) parsePipes() []*Pipe {
 		for p.cur().Type != TokenPipe && p.cur().Type != TokenEOF && !p.tooDeep {
 			pipe.Args = append(pipe.Args, p.parseExpression())
 			if p.accept(TokenComma) {
+				if p.cur().Type == TokenPipe || p.cur().Type == TokenEOF {
+					p.errorAt(p.cur(), "expected pipe argument after ','")
+				}
 				continue
 			}
 			// Legacy Endgame field-list pipes accept space-separated fields
