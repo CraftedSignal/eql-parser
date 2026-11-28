@@ -232,6 +232,10 @@ func TestParseErrors(t *testing.T) {
 		{`sequence`, "at least two"},
 		{`process where a in (`, "empty list"},
 		{`process where a in (1,)`, "expected expression after ',' in list"},
+		{`process where a : ("x",)`, "expected expression after ',' in pattern list"},
+		{`process where a : ("x",`, "expected expression after ',' in pattern list"},
+		{`process where true | head 10,`, "expected pipe argument after ','"},
+		{`process where true | unique a, | count`, "expected pipe argument after ','"},
 		{`process where a : ()`, "empty pattern list"},
 		{`process where f(g(h(`, "expected )"},
 	}
