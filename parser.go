@@ -740,6 +740,9 @@ func (p *parser) parsePatternRHS(kind PatternKind, insensitive bool, x Expr) Exp
 			if !p.accept(TokenComma) {
 				break
 			}
+			if p.cur().Type == TokenRParen || p.cur().Type == TokenEOF {
+				p.errorAt(p.cur(), "expected expression after ',' in pattern list")
+			}
 		}
 		if _, ok := p.expect(TokenRParen); !ok {
 			p.skipTo(TokenRParen, TokenPipe, TokenAnd, TokenOr, TokenRBrack)
